@@ -1,0 +1,167 @@
+---
+title: "NFT vs COBYLA (new formulation, single-start SPIQ)"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(glue)
+```
+
+QAOA runs with the NFT optimizer (Week112–116) and the COBYLA runs they restart from the same point (Week105–109).
+Both use the new "qaoa" formulation, a single-start SPIQ starting point (the same JSON for both), reps 2, a budget of 1000
+evaluations and trial 1. Only the optimizer differs. See `docs/RESULTS_INDEX.md`, "NFT instead of COBYLA".
+
+**Optimal ratio** = the share of the 10240 samples that decode to the best plan (the same definition as `formulation.rmd`).
+- **Raw:** the bitstring is decoded as it is. An invalid bitstring counts as a miss.
+- **Fallback:** an invalid bitstring is repaired into a valid join order first.
+
+**First iteration** = the readout at the first energy evaluation, which is the SPIQ starting point. **Final** = the readout at the optimizer's best angles.
+
+```{r}
+root <- normalizePath("..")
+sub_dir <- "ExperimentalAnalysis/IBMQ/QPUPerformance/Results/CPU_Data/iterations_1000/reps_2"
+
+runs <- tribble(
+  ~problem, ~input_idx, ~cobyla_week, ~nft_week, ~ground_energy, ~target, ~qubits,
+  "P1", 0, 105, 112, 1.1760913, 15,   3,
+  "P2", 1, 106, 113, 3.6532125, 315,  8,
+  "P3", 2, 107, 114, 2.3344538, 29,   8,   # best cost 29.4, stored as an integer
+  "P4", 3, 108, 115, 4.9084850, 165,  15,
+  "P5", 4, 109, 116, 8.3398488, 1605, 24
+) %>%
+  pivot_longer(c(cobyla_week, nft_week), names_to = "optimizer", values_to = "week") %>%
+  mutate(optimizer = if_else(optimizer == "cobyla_week", "COBYLA", "NFT"),
+         dir = if_else(optimizer == "COBYLA", "spiq", "nft"))
+
+energy_csv <- function(r) glue("{root}/outputs/{r$dir}/energy/Week{r$week}/{sub_dir}/{r$optimizer}/input{r$input_idx}/trial1/energy_per_iteration_1000_{r$optimizer}_2_1.csv")
+readout_csv <- function(r, stage) {
+  if (stage == "final") glue("{root}/outputs/{r$dir}/Week{r$week}/{sub_dir}/{r$optimizer}/trial_1/readout_summary.csv")
+  else glue("{root}/outputs/{r$dir}/Week{r$week}/{sub_dir}/{r$optimizer}/input{r$input_idx}/trial1/readout_summary_eval1.csv")
+}
+
+# The "# all_solutions" block of a readout: one row per sample and decoding (count/probability repeat the bitstring totals)
+read_solutions <- function(path) {
+  lines <- readLines(path, warn = FALSE)
+  start <- grep("^#\\s*all_solutions\\s*$", lines)
+  read_csv(I(paste(lines[(start + 1):length(lines)], collapse = "\n")), show_col_types = FALSE,
+           col_types = cols(.default = "c")) %>%
+    select(cost, used_fallback) %>%
+    mutate(cost = as.numeric(cost)) %>%
+    mutate(used_fallback = as.logical(used_fallback))
+}
+```
+
+```{r}
+energies <- runs %>%
+  rowwise() %>%
+  mutate(df = list(read.csv(energy_csv(pick(everything()))) %>% select(iteration, energy))) %>%
+  ungroup() %>%
+  unnest(df)
+
+ratios <- runs %>%
+  crossing(stage = c("first iteration", "final")) %>%
+  rowwise() %>%
+  mutate(sol = list(read_solutions(readout_csv(pick(everything()), stage)))) %>%
+  ungroup() %>%
+  unnest(sol) %>%
+  group_by(problem, optimizer, week, stage, used_fallback) %>%
+  summarise(optimal_ratio = mean(cost == first(target)), .groups = "drop") %>%
+  mutate(decoding = if_else(used_fallback, "fallback", "raw"),
+         stage = factor(stage, c("first iteration", "final")))
+```
+
+# 1. Energy over iterations
+
+Each plot shows one workload: NFT and COBYLA from the same SPIQ starting point. The dashed line is the exact ground-state energy.
+The first evaluations differ slightly because the two optimizers take different first steps.
+
+```{r, fig.width=9, fig.height=4.5}
+for (p in unique(runs$problem)) {
+  d <- energies %>% filter(problem == p)
+  g <- runs %>% filter(problem == p, optimizer == "COBYLA")
+  print(
+    ggplot(d, aes(iteration, energy, colour = optimizer)) +
+      geom_line(linewidth = 0.4) +
+      geom_hline(yintercept = g$ground_energy, linetype = "dashed", colour = "green4") +
+      annotate("text", x = Inf, y = g$ground_energy, label = "ground state", hjust = 1.05, vjust = -0.5,
+               colour = "green4", size = 3) +
+      scale_colour_manual(values = c(COBYLA = "grey40", NFT = "steelblue")) +
+      theme_bw() +
+      labs(x = "Energy evaluation", y = "Energy", colour = "Optimizer",
+           title = glue("{p} ({g$qubits} qubits): NFT (Week{g$week + 7}) vs COBYLA (Week{g$week})"))
+  )
+}
+```
+
+## Best energy seen so far
+
+NFT tries large angle changes while it fits each sine curve, so its raw curve jumps around. The running minimum shows the progress more clearly.
+Both curves are normalized: 1 = starting energy, 0 = ground state. P1 and P3 start at the ground state, so they are left out.
+
+```{r, fig.width=9, fig.height=5}
+energies %>%
+  group_by(problem, optimizer) %>%
+  mutate(best_so_far = cummin(energy),
+         norm = (best_so_far - ground_energy) / (first(energy) - ground_energy)) %>%
+  filter(first(energy) - ground_energy > 1e-9) %>%
+  ggplot(aes(iteration, norm, colour = optimizer)) +
+  geom_line() +
+  facet_wrap(~problem) +
+  scale_colour_manual(values = c(COBYLA = "grey40", NFT = "steelblue")) +
+  coord_cartesian(ylim = c(0, 1)) +
+  theme_bw() +
+  labs(x = "Energy evaluation", y = "Best energy so far (1 = start, 0 = ground)", colour = "Optimizer",
+       title = "Progress toward the ground state")
+```
+
+```{r}
+energies %>%
+  group_by(problem, optimizer, week, ground_energy) %>%
+  summarise(evaluations = n(), start_energy = first(energy), best_energy = min(energy),
+            final_energy = last(energy), .groups = "drop") %>%
+  mutate(gap_to_ground = best_energy - ground_energy,
+         share_to_ground = if_else(start_energy - ground_energy < 1e-9, NA_real_,
+                                   (start_energy - best_energy) / (start_energy - ground_energy))) %>%
+  knitr::kable(digits = 3, caption = "Energies per run (share_to_ground: 0 = no progress, 1 = reached the ground state; NA = started there)")
+```
+
+# 2. Optimal ratio: first vs final iteration
+
+```{r}
+ratio_table <- function(dec) {
+  ratios %>%
+    filter(decoding == dec) %>%
+    select(problem, optimizer, stage, optimal_ratio) %>%
+    pivot_wider(names_from = stage, values_from = optimal_ratio) %>%
+    mutate(change = final - `first iteration`) %>%
+    select(problem, optimizer, `first iteration`, final, change) %>%
+    arrange(problem, optimizer) %>%
+    knitr::kable(digits = 4, caption = glue("Optimal ratio, {dec} decoding: first vs final iteration"))
+}
+ratio_table("raw")
+ratio_table("fallback")
+```
+
+Side by side, final iteration only:
+
+```{r}
+ratios %>%
+  filter(stage == "final") %>%
+  select(problem, decoding, optimizer, optimal_ratio) %>%
+  pivot_wider(names_from = optimizer, values_from = optimal_ratio) %>%
+  arrange(decoding, problem) %>%
+  knitr::kable(digits = 4, caption = "Final optimal ratio: COBYLA vs NFT")
+```
+
+```{r, fig.width=9, fig.height=6}
+ggplot(ratios, aes(problem, optimal_ratio, fill = optimizer)) +
+  geom_col(position = position_dodge(width = 0.8), width = 0.75) +
+  geom_text(aes(label = sprintf("%.3f", optimal_ratio)), position = position_dodge(width = 0.8), vjust = -0.3, size = 2.8) +
+  facet_grid(stage ~ decoding) +
+  scale_fill_manual(values = c(COBYLA = "grey55", NFT = "steelblue")) +
+  coord_cartesian(ylim = c(0, 1.08)) +
+  theme_bw() +
+  labs(x = "Workload", y = "Optimal ratio", fill = "Optimizer", title = "Optimal ratio: first vs final iteration, NFT vs COBYLA")
+```

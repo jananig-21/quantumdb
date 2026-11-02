@@ -34,7 +34,7 @@ from types import SimpleNamespace
 import numpy as np
 from qiskit import IBMQ
 from qiskit.algorithms import QAOA
-from qiskit.algorithms.optimizers import AQGD, COBYLA, SPSA
+from qiskit.algorithms.optimizers import AQGD, COBYLA, NFT, SPSA
 from qiskit.circuit.library.n_local.qaoa_ansatz import QAOAAnsatz
 from qiskit.providers.aer import QasmSimulator
 from qiskit.utils import QuantumInstance
@@ -53,7 +53,7 @@ import Scripts.QUBOGenerator as QUBOGenerator
 parser = argparse.ArgumentParser()
 parser.add_argument("--trial", type=int, default=1, help="Trial number, used in result paths")
 parser.add_argument("--reps", type=int, default=1, help="QAOA depth p")
-parser.add_argument("--optimizer", type=int, default=0, help="0=AQGD, 1=COBYLA (used in the paper), 2=SPSA")
+parser.add_argument("--optimizer", type=int, default=0, help="0=AQGD, 1=COBYLA (used in the paper), 2=SPSA, 3=NFT")
 parser.add_argument(
     "--spiq_json",
     type=str,
@@ -75,7 +75,7 @@ TRIAL_ID = args.trial
 TAG = args.reps
 optmi = args.optimizer
 SPIQ_JSON = args.spiq_json
-current_optim = {0: "AQGD", 1: "COBYLA"}.get(optmi, "SPSA")
+current_optim = {0: "AQGD", 1: "COBYLA", 3: "NFT"}.get(optmi, "SPSA")
 
 SHOTS = 10240  # shots for every sampled readout
 
@@ -109,6 +109,8 @@ def get_optimizer(iterations):
         return COBYLA(maxiter=iterations, rhobeg=2.0, tol=1e-12, disp=True)
     if optmi == 2:
         return SPSA(maxiter=iterations)
+    if optmi == 3:  # one angle per rotation (SPIQ relaxed circuit) is the case NFT's sinusoid fit assumes
+        return NFT(maxfev=iterations, disp=True)
     return AQGD(maxiter=iterations, eta=0.01)
 
 

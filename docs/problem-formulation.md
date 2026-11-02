@@ -63,6 +63,16 @@ In the old formulation those 12 bits were separate variables. Penalty C (below) 
 - **Cost:** for each join step, take the log of the result size and **square it**. Logs turn the multiplications into additions.
 - All penalties are multiplied by a weight λ, which was set to **the number of join steps** (1 for P1, 2 for P2 and P3).
 
+**The old Hamiltonian, in full.** Notation:
+- v_{t,j} = "table t is in the result after step j", and w_{p,j} = "condition p is applied at step j";
+- c_t = log10 of table t's size;
+- s_p = log10 of condition p's selectivity, which links tables a_p and b_p;
+- J = R − 2 steps, and λ = J.
+
+$$H_{\text{q2o}} = \lambda\Big[\underbrace{\sum_j\big(j+2-\textstyle\sum_t v_{t,j}\big)^2}_{\text{A}} + \underbrace{\sum_t\sum_{j\ge1}\big(v_{t,j-1}-v_{t,j-1}v_{t,j}\big)}_{\text{B}} + \underbrace{\sum_{p,j}\big(2w_{p,j}-w_{p,j}v_{a_p,j}-w_{p,j}v_{b_p,j}\big)}_{\text{C}}\Big] + \underbrace{\sum_j\Big(\sum_t c_t\,v_{t,j}+\sum_p s_p\,w_{p,j}\Big)^2}_{\text{cost}}$$
+
+Its Pauli (Z/ZZ) form and every coefficient are in §9.0.
+
 ## 4. What was wrong with it
 
 ### Problem 1: the penalty was too weak, so the lowest energy belonged to an invalid bitstring
@@ -99,6 +109,26 @@ P3 lists the pair 1–2 twice. That means two separate conditions between the sa
 
 ## 5. What we changed (the "qaoa" formulation)
 
+### The intuition, in plain terms
+
+Think of the energy as a **price tag** on every bitstring, and of QAOA as a shopper who mostly picks cheap items. The price has two parts: **fines** for breaking the rules of a real plan (λ × penalties), and the **plan's own cost**. Each change below makes the price tag more honest.
+
+**1. "Does this join condition apply?" is no longer a separate choice.**
+- *In database terms:* a query optimizer never *decides* whether to apply `WHERE T1.id = T2.id`. The predicate applies automatically as soon as T1 and T2 are both in the intermediate result. Planners derive the applicable predicates from the set of joined relations.
+- *The old formulation* gave every (condition, step) its own on/off switch, and a rule (Penalty C) to catch switches that were on illegally. The switch could still be on when it shouldn't be, or off when it should be on. Either way the optimizer could make a result *look* smaller than it really is.
+- *The new formulation* does what a planner does: "condition applies" = "table a is in" AND "table b is in", the product of two bits. There is nothing left to cheat with, no Penalty C, and many fewer qubits.
+
+**2. The cost is the log of the result size, not its square.**
+- *In database terms:* cardinality estimates multiply (rows × rows × selectivity), so taking logs turns the estimate into a sum. Each table in the result adds its log row count, and each applicable predicate subtracts the log of its selectivity. This is the usual log-space trick in cost models.
+- *Why the square was there:* the real cost (total rows produced) is dominated by the biggest intermediate result, and squaring makes big results count more.
+- *Why it backfired:* squaring rewards *anything* that pushes the estimated size toward 1 row. That includes impossible plans that forget a table, or switch on a predicate that doesn't apply. It is like a cost model that loves plans with an estimated 0 rows, even when the estimate is wrong because the plan is broken. With the plain log, forgetting a table saves exactly that table's log row count, no more. That makes the fine needed to stop it small and easy to compute.
+
+**3. The fine (λ) is set from the data.**
+- *In everyday terms:* a parking fine must be higher than the parking fee, or people stop paying. But a fine of a million dollars makes every other price look like zero.
+- *Here:* λ must exceed what one cheat can save (one table's log size, change 2), so we set λ = 1.1 × the largest log table size. If λ is too large, the price differences between real plans become a tiny fraction of the total price range, and QAOA, which only sees the overall landscape, can't tell the best plan from the second best.
+
+**What it costs us.** The energy now ranks real plans by the **product** of their intermediate sizes, the sum of their logs. The real cost is the **sum** of the sizes. In database terms, we rank plans by the geometric mean of the work instead of the total work. The best plan comes out on top in every problem we checked. Among mediocre plans the order disagrees a little more often than with the square (§9).
+
 | | Before ("q2o") | Now ("qaoa") |
 |---|---|---|
 | Bits | tables × steps **+ conditions × steps** | tables × steps only |
@@ -109,6 +139,20 @@ P3 lists the pair 1–2 twice. That means two separate conditions between the sa
 | Penalties A and B | yes | yes, unchanged |
 | Penalty C | yes | **gone**: there are no condition bits left to police |
 | Repeated pair (P3 1–2) | energy: both applied; checker: first only | both applied in the energy **and** in the checker |
+
+### The new Hamiltonian, in full
+
+The notation is the same as in §3, but there are no w bits, and λ = 1.1 · max_t c_t.
+
+$$H_{\text{qaoa}} = \lambda\Big[\underbrace{\sum_j\big(j+2-\textstyle\sum_t v_{t,j}\big)^2}_{\text{A}} + \underbrace{\sum_t\sum_{j\ge1}\big(v_{t,j-1}-v_{t,j-1}v_{t,j}\big)}_{\text{B}}\Big] + \underbrace{\sum_j\Big[\sum_t c_t\,v_{t,j} + \sum_p s_p\,v_{a_p,j}\,v_{b_p,j}\Big]}_{\text{cost}}$$
+
+Compared with §3:
+- Penalty C is gone.
+- w_{p,j} is replaced by v_{a_p,j} v_{b_p,j}.
+- The cost is no longer squared.
+- λ comes from the data.
+
+Its Pauli (Z/ZZ) form and every coefficient are in §9.0.
 
 ### How the qubit count grows with problem size
 
@@ -130,7 +174,7 @@ Our problems: P1 3 vs 5, P2 8 vs 12, P3 8 vs 20, P4 15 vs 30, and P5 24 vs 52 (n
 
 **What fits in a simulation.** An exact simulation stores 2^n numbers, at 16 bytes each: 256 MB at 24 qubits, 512 MB at 25, 16 GB at 30, and 16 TB at 40. With our 25-qubit limit (the container has about 7.8 GB of RAM), the new formulation reaches **6 tables** (24 qubits). The old one reaches **4 tables**, and only with up to 8 conditions. Every 5-table query is at least 27 qubits in the old formulation.
 
-**The circuit grows too.** SPIQ gives every gate its own angle, so the number of angles follows the number of terms in the energy. Measured: P4 has 140 angles (new) vs 410 (old), and P5 has 252 vs 868. The SPIQ search took 3–4× longer with the old formulation (see §9).
+**The circuit grows too.** SPIQ gives every gate its own angle, so the number of angles follows the number of terms in the energy. Measured: P4 has 140 angles (new) vs 410 (old), and P5 has 252 vs 868. The SPIQ search took 3–4× longer with the old formulation (see `docs/RESULTS_INDEX.md`, "Findings").
 
 ### Why each change helps
 - **Removing the condition bits** saves qubits, makes illegal conditions impossible, and removes a whole penalty.
@@ -223,159 +267,169 @@ It was built for gate-based machines, but it isn't a better fit for QAOA.
 
 ## 8. To do
 - [x] Run `python3 test_qubo_formulation.py` in the container (from `base/`). It passes.
-- [x] Random-start QAOA with the new formulation (Week96–98). Results are in the log below.
-- [x] SPIQ-started QAOA with the new formulation (Week102–104, same settings as Week93–95). Results are in the log below.
+- [x] Random-start QAOA with the new formulation (Week96–98). Results are in `docs/RESULTS_INDEX.md`, "Findings".
+- [x] SPIQ-started QAOA with the new formulation (Week102–104, same settings as Week93–95). Results are in `docs/RESULTS_INDEX.md`, "Findings".
 - [ ] P2 still splits 50/50 between the best plan (315) and the second-best (465). Ideas: more SPIQ starts, or a slightly stronger cost term so the two plans are further apart in energy.
 - [ ] Later, only if needed: an exact-cost version, or special QAOA mixers that never leave the set of real plans (these need no penalty, but cost more qubits).
 
-## 9. Experiment log
+## 9. Verification: the Hamiltonians and the exact eigensolver, old vs new
 
-Newest first.
+Everything here is classical: no QAOA. `base/hamiltonian_report.py`, run in the container from `base/`, regenerates it. The full Hamiltonians of every problem are in `docs/hamiltonians/P<k>_<formulation>.txt`, with the numbers in `docs/hamiltonians/summary.json`.
 
-| Date | Formulation | Problem | Result | Where |
-|---|---|---|---|---|
-| 2026-10-21 | **q2o vs qaoa, single-start SPIQ starting point only** (no QAOA; q2o needs 30 / 52 qubits) (Week110–111 for q2o, the Week108–109 points for qaoa) | P4, P5 | Share of samples that are valid plans: **P4 qaoa 0.247 vs q2o 0.003; P5 qaoa 0.065 vs q2o 0.000**. With fallback decoding, share at the best plan: P4 0.256 vs 0.188, P5 0.000 vs 0.047. See "Old vs new formulation on P4/P5" below. | `spiq_init_outputs/single_Week108–111` |
-| 2026-10-20 | qaoa, single-start SPIQ, same settings as Week105–107 (Week108–109) | **P4 (5 tables, 15 qubits), P5 (6 tables, 24 qubits)** | Share at the best plan: **P4 0.000 raw / 0.252 with fallback, P5 0.000**. See "Larger problems" below. | `outputs/spiq/Week108–109` (+ `energy/`) |
-| 2026-10-13 | qaoa, **single-start SPIQ** (one GA, seed 0, 2000 generations, one QAOA run) (Week105–107) | P1–P3 | Share at the best plan: **P1 1.000, P2 0.000, P3 1.000**. See "Single-start SPIQ" below. | `outputs/spiq/Week105–107` (+ `energy/`) |
-| 2026-10-12 | qaoa, **multi-start SPIQ**, same settings as Week93–95 (Week102–104) | P1–P3 | Share at the best plan: **P1 1.000, P2 0.503, P3 1.000** (old formulation: 0.507, 0.0001, 0.126). See "Multi-start SPIQ" below. | `outputs/multi-spiq/Week102–104` (+ `energy/`) |
-| 2026-10-12 | q2o, random start, same settings (Week99–101) | P1–P3 | The like-for-like old-formulation partner runs. See "Old vs new formulation" below. | `outputs/uninitialized/Week99–101` (+ `energy/`) |
-| 2026-10-12 | qaoa, **random start**, COBYLA, reps 2, max 1000 iterations | P1–P3 | See the table below. COBYLA stopped early (123–137 evaluations) far above the lowest possible energy, so a random start with only 4 angles does not reach the good plans, even though the formula now puts them at the bottom. | `outputs/uninitialized/Week96–98` (+ `energy/`) |
-| 2026-10-12 | qaoa (λ = 1.1 × largest log size) | P1–P3 | Exact energies: the lowest-energy bitstring is a real plan with the best cost in all three (15, 315, 29). | analysis only |
-| 2026-10-07 | q2o vs qaoa, several λ | P1–P3 | Smallest λ that works: q2o 1.35 / 4.75 / 1.16, qaoa 0.29 / 1.30 / 0.29. A bigger λ shrinks the visible best-vs-second-best difference roughly as 1/λ. | analysis only |
-| 2026-10-07 | q2o, λ = number of steps | P1–P3 | Exact energies: in P1 and P2 a fake plan has the lowest energy and decodes to cost 15/30 (P1) and 465 (P2). | analysis only |
-| 2026-09-30 | q2o, λ = number of steps | P1–P3 | Seeded multi-start SPIQ, share of samples at the best plan: P1 0.507, P2 0.0001 (99.99% at 465), P3 0.126. | `outputs/multi-spiq/Week93–95` |
+**Reading a Hamiltonian.** `qubo.to_ising()` replaces each bit x by (1 − Z)/2, so the QUBO becomes a constant (the *offset*) plus terms on one qubit (`Z`) and on two qubits (`ZZ`). The labels are qiskit's: qubit 0 is the **rightmost** letter. The conversion is exact: QUBO energy = Ising energy + offset, for every bitstring.
 
-### Random-start runs with the new formulation (2026-10-12)
+### 9.0 The general form of both Hamiltonians
 
-"Share at best plan" is the fraction of the 10,240 samples whose decoded plan has the best cost. "Plain" decoding reads the order straight from the bits; "fallback" decoding repairs the order to avoid cross joins.
+**Notation.**
+- R tables and P join conditions. J = R − 2 join steps get bits, numbered j = 0 … J−1.
+- c_t = log10(card of table t), and s_p = log10(selectivity of condition p), which is negative.
+- Condition p links tables a_p and b_p.
+- v_{t,j} = 1 means "table t is in the result after join step j".
+- w_{p,j} = 1 means "condition p is applied at step j". Only the old formulation has these bits.
 
-| | Lowest possible energy | Energy reached | Share at best plan: first step (plain / fallback) | Share at best plan: end (plain / fallback) | Most common plan cost at the end (plain) |
-|---|---|---|---|---|---|
-| P1 (Week96) | 1.176 | 1.929 | 0.013 / 0.114 | **0.220 / 0.252** | 30 (63%) |
-| P2 (Week97) | 3.653 | 8.938 | 0.013 / 0.066 | **0.018 / 0.055** | 960 (22%) |
-| P3 (Week98) | 2.334 | 5.507 | 0.008 / 0.125 | **0.036 / 0.189** | 504 (16%) |
+**The new formulation ("qaoa"): R·J qubits, λ = 1.1 · max_t c_t**
 
-What this tells us:
-- **P2's "465 trap" is gone.** Week94 put 99.99% of samples on cost 465; Week97's samples are spread across many plans. **P1 still leans to the second-best plan** (63% at cost 30). In the new formula that plan is a real plan with the second-lowest energy (1.477 vs 1.176), not a fake one, so a stronger optimizer or start should move samples to 15.
-- **A random start is too weak to find the best plan.** The energy reached is still far above the lowest possible, so most samples are invalid bitstrings or poor plans. This is a limit of random-start QAOA with 4 angles, not of the formula.
-- **For comparison**, the old formulation's random-start P2 run (Week74/Week84, up to 10,000 iterations) got 0.021 plain / 0.099 fallback, which is similar. Random starts were weak under both formulations.
-- **Next:** SPIQ-started runs with the new formulation. Week93–95 were SPIQ-started, so that is the like-for-like comparison.
+$$H = \lambda\Big[\sum_j \big(j+2-\textstyle\sum_t v_{t,j}\big)^2 + \sum_t\sum_{j\ge1}\big(v_{t,j-1}-v_{t,j-1}v_{t,j}\big)\Big] + \sum_j\Big[\sum_t c_t\,v_{t,j} + \sum_p s_p\,v_{a_p,j}\,v_{b_p,j}\Big]$$
 
-### Old vs new formulation, both with a random start (2026-10-12)
+**The old formulation ("q2o"): (R+P)·J qubits, λ = J**
 
-To compare fairly, the old formulation was re-run with the same code, settings and starting angles (all 0.5) as Week96–98: Week99 (P1), Week100 (P2) and Week101 (P3). The only difference is `qubo-formulation`.
+$$H = \lambda\Big[H_A + H_B + \sum_{p,j}\big(2w_{p,j} - w_{p,j}v_{a_p,j} - w_{p,j}v_{b_p,j}\big)\Big] + \sum_j\Big(\sum_t c_t\,v_{t,j} + \sum_p s_p\,w_{p,j}\Big)^2$$
 
-**Energies.** The two formulations use different energy scales, so the raw numbers can't be compared directly. The last column fixes that: it shows how much of the distance from the starting energy down to the lowest possible energy the optimizer covered (0 = no progress, 1 = reached the bottom).
+H_A and H_B are the same two penalty sums as in the new formulation.
 
-| Workload | Formulation | Lowest possible | Start energy | Final energy | Best energy seen | Share of the way to the bottom |
-|---|---|---|---|---|---|---|
-| P1 | old (q2o), Week99 | 1.031 | 5.083 | 2.733 | 2.710 | 0.59 |
-| P1 | **new (qaoa), Week96** | 1.176 | 4.364 | 1.935 | 1.929 | **0.76** |
-| P2 | old (q2o), Week100 | 4.766 | 24.684 | 19.404 | 19.269 | 0.27 |
-| P2 | **new (qaoa), Week97** | 3.653 | 13.254 | 8.961 | 8.938 | **0.45** |
-| P3 | old (q2o), Week101 | 2.725 | 30.606 | 22.852 | 22.758 | 0.28 |
-| P3 | **new (qaoa), Week98** | 2.334 | 12.615 | 5.593 | 5.507 | **0.69** |
+**Written out bit by bit (the QUBO).** Since x² = x for a bit, each formula is a constant, plus a weight h on each bit, plus a weight K on each pair of bits. Pairs not listed have weight 0. [j < J−1] is 1 when step j is not the last one and 0 otherwise.
 
-**Optimal ratio** (share of samples whose plan has the best cost):
+| Term | New ("qaoa") | Old ("q2o") |
+|---|---|---|
+| h on v_{t,j} | λ(1 − 2(j+2)) + λ·[j < J−1] + **c_t** | λ(1 − 2(j+2)) + λ·[j < J−1] + **c_t²** |
+| h on w_{p,j} | (no such bit) | 2λ + s_p² |
+| K between two tables at the same step, v_{t,j}–v_{u,j} | 2λ + **Σ s_p over conditions linking t and u** | 2λ + **2 c_t c_u** |
+| K between a table at two consecutive steps, v_{t,j}–v_{t,j+1} | −λ | −λ |
+| K between table and condition at the same step, v_{t,j}–w_{p,j} | (no such bit) | 2 c_t s_p − λ·[t is a_p or b_p] |
+| K between two conditions at the same step, w_{p,j}–w_{q,j} | (no such bit) | 2 s_p s_q |
+| Constant | λ Σ_j (j+2)² | λ Σ_j (j+2)² |
 
-| Workload | Formulation | Start: plain | Start: fallback | End: plain | End: fallback | Most common plan at the end (plain) |
-|---|---|---|---|---|---|---|
-| P1 (best 15) | old (q2o) | 0.040 | 0.198 | 0.129 | **0.470** | 30 (55%) |
-| P1 (best 15) | new (qaoa) | 0.013 | 0.114 | **0.220** | 0.252 | 30 (63%) |
-| P2 (best 315) | old (q2o) | 0.010 | 0.060 | 0.018 | **0.101** | 900 (25%) |
-| P2 (best 315) | new (qaoa) | 0.013 | 0.066 | 0.018 | 0.055 | 960 (22%) |
-| P3 (best 29) | old (q2o) | 0.018 | 0.160 | 0.022 | 0.150 | 504 (22%) |
-| P3 (best 29) | new (qaoa) | 0.008 | 0.125 | **0.036** | **0.189** | 504 (16%) |
+**As a Hamiltonian.** Replace every bit x_i by (1 − Z_i)/2. Then:
+- each pair weight K_ik becomes a **ZZ term with coefficient K_ik / 4**;
+- each bit becomes a **Z term with coefficient −h_i/2 − Σ_k K_ik/4**;
+- the **offset** is constant + Σ h_i/2 + Σ K_ik/4.
 
-What this shows:
-- **The optimizer gets much further with the new formulation:** 0.76 vs 0.59, 0.45 vs 0.27 and 0.69 vs 0.28 of the way to the bottom. A smaller penalty weight and fewer qubits make the energy landscape easier for QAOA.
-- **Plain decoding gets better or stays level:** P1 0.129 → 0.220, P2 0.018 → 0.018, P3 0.022 → 0.036.
-- **Fallback decoding is mixed:** P3 improves (0.150 → 0.189), while P1 (0.470 → 0.252) and P2 (0.101 → 0.055) drop. Under the old formulation many samples are fake plans, and the fallback repair often turns those into good plans by luck. With the new formulation more samples are real but second-best plans, which the repair leaves alone.
-- **Neither random start gets most samples onto the best plan.** With only 4 angles and COBYLA stopping after about 120 evaluations, random-start QAOA is weak under both formulations. The bigger test is still SPIQ-started runs.
+**Both Hamiltonians in Pauli form.** Doing that substitution gives the following. Here
+- C = Σ_t c_t and Ŝ = Σ_p s_p, so C + Ŝ is the log of the full join's size;
+- S_t = the sum of s_p over the conditions that touch table t;
+- s_{tu} = the sum of s_p over the conditions that link tables t and u (0 if none);
+- d_t = the number of conditions that touch table t;
+- δ_j = ½([j < J−1] − [j > 0]), which is +½ at the first step, −½ at the last, and 0 in between (0 when J = 1).
 
-### Multi-start SPIQ with the new formulation (2026-10-12)
+New ("qaoa"):
 
-Same settings as Week93–95 (8 independent GA searches, 2000 generations, seed 0, energy window 0.25, 10 candidates, 3 QAOA starts, COBYLA up to 1000 evaluations, reps 2). Only the formulation differs. Week102 = P1, Week103 = P2, Week104 = P3.
+$$H = \text{offset} \;-\; \tfrac12\sum_{t,j}\Big[c_t + \tfrac12 S_t + \lambda(R-2j-4+\delta_j)\Big]Z_{t,j} \;+\; \sum_j\sum_{t<u}\tfrac{2\lambda+s_{tu}}{4}\,Z_{t,j}Z_{u,j} \;-\; \tfrac{\lambda}{4}\sum_t\sum_{j<J-1} Z_{t,j}Z_{t,j+1}$$
 
-**Optimal ratio** (share of the 10,240 samples at the best plan; plain and fallback decoding gave the same numbers in every run):
+Old ("q2o"):
 
-| Workload | Old formulation (Week93–95): start / end | **New formulation (Week102–104): start / end** | Rest of the samples (new) |
-|---|---|---|---|
-| P1 (best 15) | 0.502 / 0.507 | **1.000 / 1.000** | none |
-| P2 (best 315) | 0.000 / 0.0001 | **0.503 / 0.503** | 465 (49.6%), 600 (3 samples) |
-| P3 (best 29) | 0.121 / 0.126 | **1.000 / 1.000** | none |
+$$\begin{aligned}H = \text{offset} &- \tfrac12\sum_{t,j}\Big[c_t(C+\hat S) + \lambda\big(R-2j-4-\tfrac{d_t}{2}+\delta_j\big)\Big]Z_{t,j} \;-\; \tfrac12\sum_{p,j}\Big[\lambda + s_p(C+\hat S)\Big]W_{p,j}\\ &+ \sum_j\sum_{t<u}\tfrac{\lambda+c_tc_u}{2}\,Z_{t,j}Z_{u,j} \;-\; \tfrac{\lambda}{4}\sum_t\sum_{j<J-1} Z_{t,j}Z_{t,j+1}\\ &+ \sum_{j}\sum_{t,p}\tfrac{2c_ts_p-\lambda[t\in p]}{4}\,Z_{t,j}W_{p,j} \;+\; \sum_j\sum_{p<q}\tfrac{s_ps_q}{2}\,W_{p,j}W_{q,j}\end{aligned}$$
 
-**Energies**:
+Z_{t,j} is the Pauli Z on the qubit of v_{t,j}, and W_{p,j} is the Pauli Z on the qubit of w_{p,j}. The offset is constant + Σ h_i/2 + Σ K_ik/4, using the values from the table above.
 
-| Workload | Lowest possible | SPIQ start (winning start) | Best reached | Still above the bottom | Evaluations |
-|---|---|---|---|---|---|
-| P1 | 1.176 | 1.176 | 1.176 | **0** | 284 |
-| P2 | 3.653 | 3.741 | 3.739 | 0.085 | 1000 |
-| P3 | 2.334 | 2.334 | 2.334 | **0** | 991 |
+How to read the difference:
+- **Table–table couplings.** In the new formulation every pair of tables at a step has nearly the same coupling, 2λ/4, moved only by the conditions that link those two tables. In the old one the coupling is (λ + c_t c_u)/2, so it grows with the product of the two tables' sizes. Big tables dominate.
+- **Single-qubit fields.** In the old formulation every field depends on C + Ŝ, the size of the *whole* join. So each qubit's field depends on every table and every condition at once. In the new one, a table's field depends only on its own size and its own conditions.
+- **Extra couplings.** Only the old formulation has table–condition and condition–condition couplings. They exist only because the cost is squared, and they are the terms that make it large: J·P·R table–condition pairs plus J·P(P−1)/2 condition pairs.
 
-Old formulation, for comparison (its own scale): it ended 0.094 (P1), 0.784 (P2) and 9.65 (P3) above its lowest possible energy.
+**What the tables say about size.** Count the pairs with a non-zero K:
+- **New:** J·R(R−1)/2 pairs inside the steps, plus R(J−1) pairs between steps. **The number of conditions P doesn't appear**: a condition only changes the weight of a table pair that is already there.
+- **Old:** J·(R+P)(R+P−1)/2 + R(J−1) pairs. Squaring the cost connects **every** bit of a step to every other bit of that step, including condition bits that share no table.
 
-What this shows:
-- **For P1 and P3 the SPIQ search already finds the exact answer.** The best Clifford starting point *is* the ground state, which is the best plan, so every sample is the best plan from the first step on. Under the old formulation the same search could only reach fake or mixed states, because the ground state was a fake plan (P1) or too hard to reach with 20 qubits (P3).
-- **P2 goes from almost 0% to 50% at the best plan.** The remaining 50% is the second-best plan (cost 465), which is now a real plan with an energy only 0.18 above the best (≈3.83 vs 3.65). The SPIQ start is an even mix of the two, and COBYLA could not shift the balance. The old formulation's fake 465 state (energy 4.77, below every real plan) is gone.
-- **The winning start was start0 (the best SPIQ point) in all three.** The other two starts ended higher (P1 1.321 / 1.188, P2 4.545 / 4.984, P3 3.808 / 2.884).
-- **Much faster.** Fewer qubits mean fewer SPIQ angles (18 / 64 / 64 instead of 40 / 116 / 268): the whole pipeline took about 0.9 h (P1) and 1.7 h (P2, P3), compared with 3–6.7 h for Week93–95.
-- **Random start vs SPIQ (same new formulation):** end share at the best plan 0.22 → 1.00 (P1), 0.018 → 0.503 (P2), 0.036 → 1.00 (P3). The starting point matters more than anything else here.
+That gives exactly the ZZ counts in 9.2 (3/10, 16/34, 16/94, 40/145, 78/330). It also shows why P3, with 6 conditions, has the same size as P2 in the new formulation but is 3× larger in the old one.
 
-Plots: `graphs/formulation.rmd` sections 4, 5 and 7.
+**Checked:** `base/test_hamiltonian_form.py` builds every coefficient from these formulas and compares it with `qubo.to_ising()`, for P1–P5 and both formulations. It also checks the closed-form Z coefficients of both formulations. Every coefficient and offset matches to within 3·10⁻¹³, and the set of ZZ pairs is identical.
 
-### Single-start SPIQ with the new formulation (2026-10-13)
+### 9.1 The full Hamiltonians for P1
 
-The original SPIQ: **one** GA search (seed 0, 2000 generations), **one** starting point, **one** QAOA run (COBYLA up to 1000 evaluations, reps 2). Week105 = P1, Week106 = P2, Week107 = P3. Everything else is the same as Week102–104.
+New (3 qubits: tables 0, 1, 2 at the single join step; λ = 1.431, offset = 2.670):
+```
++0.315051 ZII    +0.627521 IZI    +0.465566 IIZ
++0.465566 ZZI    +0.715566 ZIZ    +0.465566 IZZ
+```
+Old (5 qubits: tables 0–2, then conditions 0–1 and 1–2; λ = 1, offset = 4.064):
+```
++0.238561 ZIIII  +0.238561 IZIII  -0.210890 IIZII  +0.131385 IIIZI  +0.011439 IIIIZ
++0.500000 ZZIII  -0.900515 ZIZII  -0.650515 IZZII  -0.838046 ZIIZI  -0.838046 IZIZI
++1.265065 IIZZI  -0.500000 ZIIIZ  -0.750000 IZIIZ  +1.150515 IIZIZ  +1.088046 IIIZZ
+```
+P2–P5 are too long to print here; see the files.
 
-| Workload | Random (Week96–98): end | **Single-start SPIQ (Week105–107): start / end** | Multi-start SPIQ (Week102–104): end | Energy reached (single) | Lowest possible |
-|---|---|---|---|---|---|
-| P1 (best 15) | 0.220 | **1.000 / 1.000** | 1.000 | 1.176 | 1.176 |
-| P2 (best 315) | 0.018 | **0.000 / 0.000** | 0.503 | 5.100 | 3.653 |
-| P3 (best 29) | 0.036 | **1.000 / 1.000** | 1.000 | 2.334 | 2.334 |
+### 9.2 Size and constants
 
-(Plain and fallback decoding agree in every single-start run.)
-
-What this shows:
-- **P1 and P3: one search is enough.** The single GA finds the same starting point as multi-start, which is the exact ground state (the best plan). This is expected: multi-start's best point on these two also came from GA 0, which uses the same seed.
-- **P2: one search is not enough.** The single GA's best point (energy 5.13) mixes plans with costs 465 (50%), 900 (25%) and 1350 (25%), and none with the best cost 315. COBYLA only lowered it to 5.10. Multi-start's best point came from a different GA (GA 7) and started at 3.74, already half on the best plan. So on P2 the extra independent searches are what make the difference.
-- **Run time:** about 7 min (P1) and 13 min (P2, P3), compared with 0.9–1.7 h for multi-start.
-
-Plots: `graphs/formulation.rmd` sections 6 and 7.2.
-
-### Larger problems: 5 and 6 tables, single-start SPIQ (2026-10-20)
-
-The same settings as Week105–107. Week108 = P4 (5 tables, 15 qubits, 140 angles) and Week109 = P5 (6 tables, 24 qubits, 252 angles). The self-check (`test_qubo_formulation.py`) confirms that the lowest-energy bitstring of each is a real plan with the best cost (165 and 1605).
-
-| Workload | Qubits | Share at best plan (raw / fallback) | Energy: start → end | Lowest possible | Most common costs (raw decode) | Run time |
-|---|---|---|---|---|---|---|
-| P4 (best 165) | 15 | 0.000 / **0.252** | 7.449 → 7.380 | 4.908 | 330 (50%), 2700 (25%), 7200 (25%) | 24 min |
-| P5 (best 1605) | 24 | 0.000 / 0.000 | 17.558 → 17.482 | 8.340 | 8500–32750, spread out; cheapest seen 7890 (fallback, 6%) | 75 min |
-
-What this shows:
-- **The single GA start is far from the ground state on both.** Unlike P1 and P3, the GA's best Clifford point is not the best plan. COBYLA then barely moves (−0.07 on each), and the first-iteration readout is almost the same as the final one.
-- **P4 is close.** Half the samples are on cost 330, the second-best order (swap tables 2 and 3). With fallback decoding a quarter reach the best plan, 165.
-- **P5 does not get near the best plan.** It is 9.1 above the lowest energy. With 252 angles and 1000 evaluations, COBYLA has fewer than four evaluations per angle.
-- Next to try: multi-start SPIQ (it fixed P2), or more COBYLA evaluations.
-
-Plots: `graphs/formulation.rmd` section 8.
-
-### Old vs new formulation on P4/P5: SPIQ starting points only (2026-10-21)
-
-With the old formulation, P4 and P5 need 30 and 52 qubits, too many to simulate QAOA. So this compares only what single-start SPIQ (one GA, seed 0, 2000 generations, reps 2) gives as the starting state. That state is a Clifford state, so stim can sample it at any size. `base/spiq_sample.py` takes 10240 samples and decodes them like a QAOA readout. The new-formulation points are the ones QAOA started from in Week108/109. The old-formulation points are Week110 (P4) and Week111 (P5).
-
-| Workload | Formulation | Qubits | Angles | Valid plans | Best plan (raw / fallback) | Median cost (raw / fallback) | Distinct states in 10240 samples | SPIQ run time |
+| | Qubits (new / old) | One-qubit Z terms | Two-qubit ZZ terms (new / old) | Higher-order terms | λ (new / old) | Offset (new / old) | Largest \|coefficient\| (new / old) | Largest ÷ smallest \|coefficient\| (new / old) |
 |---|---|---|---|---|---|---|---|---|
-| P4 (best 165) | **new** | 15 | 140 | **0.247** | 0.000 / **0.256** | 330 / 330 | 4 | 18 min |
-| P4 (best 165) | old | 30 | 410 | 0.003 | 0.004 / 0.188 | 5175 / 2700 | 10154 | 76 min |
-| P5 (best 1605) | **new** | 24 | 252 | **0.065** | 0.000 / 0.000 | 19250 / 11625 | 16 | 40 min |
-| P5 (best 1605) | old | 52 | 868 | 0.000 | 0.001 / 0.047 | 20550 / 7890 | 10240 | 117 min |
-| *uniformly random bits* | – | – | – | – | P4 0.004 / 0.145, P5 0.001 / 0.023 | – | – | – |
+| P1 | 3 / 5 | one per qubit | 3 / 10 | none | 1.43 / 1 | 2.67 / 4.06 | 0.72 / 1.27 | **2.3 / 111** |
+| P2 | 8 / 12 | one per qubit | 16 / 34 | none | 1.62 / 2 | 10.45 / 20.49 | 1.78 / 2.18 | 4.4 / 4.6 |
+| P3 | 8 / 20 | one per qubit | 16 / 94 | none | 1.62 / 2 | 9.88 / 25.80 | 1.96 / 3.32 | **4.8 / 99** |
+| P4 | 15 / 30 | one per qubit | 40 / 145 | none | 1.87 / 3 | 24.16 / 65.85 | 3.18 / 5.66 | 15 / 87 |
+| P5 | 24 / 52 | one per qubit | 78 / 330 | none | 2.20 / 4 | 48.69 / 153.09 | 4.86 / 9.81 | 55 / 164 |
 
-What this shows:
-- **The old-formulation starting points are close to random guessing.** Almost every sample is a different bitstring, almost none are valid plans, and the share at the best plan is only a little above the uniform-random baseline (P4 0.188 vs 0.145, P5 0.047 vs 0.023). What does land on the best plan comes from the fallback repair, not from SPIQ.
-- **The new-formulation starting points are concentrated.** Only 4 (P4) or 16 (P5) distinct states. On P4 a quarter of the samples are valid plans and a quarter decode to the best plan.
-- **On P5, neither start contains the best plan.** The new start sits on a few bad plans: it beats the old start on valid plans, but is worse on share-at-best and median fallback cost. This matches the Week109 QAOA result (§ "Larger problems").
-- **Size:** the old formulation needs 2–3.4× the qubits and angles, and the SPIQ search took 3–4× longer.
+**What differs in the terms.**
+- **Kept in both:**
+  - a Z on every (table, step) bit;
+  - ZZ between two tables at the same step (Penalty A, plus, in the new formulation, the join conditions);
+  - ZZ between the same table at consecutive steps (Penalty B).
+- **Only in the old formulation:**
+  - a Z on every (condition, step) bit;
+  - ZZ between a condition bit and each of its two tables (Penalty C);
+  - ZZ between condition bits, and between condition and table bits, at the same step. These come from squaring the cost.
 
-Plots: `graphs/formulation.rmd` section 9.
+  That is where the extra 7 to 252 two-qubit terms come from. Each ZZ term is one two-qubit rotation per QAOA layer, so the old circuits have 2–6× more two-qubit gates.
+- **Constants.**
+  - The new formulation's coefficients all sit within a factor of 2–55 of each other. The old ones span up to a factor of 164. In P1 and P3 the old formulation has terms of 0.011 and 0.033 next to terms above 1.
+  - The QUBO coefficients show the same thing. For P1, the new linear terms are all in [−4.72, −4.42] and the pairwise terms in [1.43, 2.86]. The old ones are in [−4, 2] and [−3.60, 5.06].
+  - Small, widely spread coefficients are the first thing to be lost to noise or limited angle precision on hardware.
+  - The offset only shifts every energy by the same amount. It doesn't change which bitstring is lowest, or the QAOA dynamics. It explains why the two formulations' energies can't be compared directly.
+
+### 9.3 The exact eigensolver
+
+`NumPyMinimumEigensolver` gives the lowest energy of the Hamiltonian. The script cross-checks it against a brute-force evaluation of all 2^n bitstrings, and the two agree to within 10⁻¹³ in every case. "Best plan's energy" is the energy of the cheapest join order, with condition bits set correctly for the old formulation.
+
+| | Lowest energy (new / old) | Best plan's energy (new / old) | Is the lowest-energy bitstring a real plan? (new / old) | Cost it decodes to (new / old) | Bitstrings below the best plan (new / old) |
+|---|---|---|---|---|---|
+| P1 (best 15) | 1.176 / 1.031 | 1.176 / 1.383 | yes / **no**: condition 1–2 is on without table 2 | 15 / 15 (luck) | 0 / **2** |
+| P2 (best 315) | 3.653 / 4.766 | 3.653 / 7.519 | yes / **no**: table 2 is forgotten at step 2 | 315 / **465** | 0 / **10** |
+| P3 (best 29.4) | 2.334 / 2.725 | 2.334 / 2.725 | yes / yes | 29 / 29 | 0 / 0 |
+| P4 (best 165) | 4.908 / too big (30 qubits) | 4.908 / 8.364 | yes / unknown | 165 / – | 0 / – |
+| P5 (best 1605) | 8.340 / too big (52 qubits) | 8.340 / 19.430 | yes / unknown | 1605 / – | 0 / – |
+
+**Should the eigensolver give the same number for both formulations?** No, and that is expected. They are two different energy functions: one squares the cost and the other doesn't, they use different λ, and the old one has extra bits. So their lowest energies are on different scales and differ (1.176 vs 1.031 on P1). What *should* be the same is the **plan** the lowest energy decodes to: the cheapest join order.
+- In the new formulation this holds on all five problems.
+- In the old one it holds on P3 only. On P1 and P2 the lowest energy is a fake plan, the cheats described in §4. On P1 the fake plan happens to decode to the best cost. On P2 it decodes to 465.
+
+This is the main fix, now confirmed by an exact solver rather than by QAOA samples.
+
+### 9.4 Did anything get worse?
+
+Three measures of how clearly the Hamiltonian separates the best plan from the rest:
+
+| | Gap: second-best plan − best plan (new / old) | Gap ÷ full energy range over all bitstrings (new / old) | Gap ÷ Σ\|coefficients\| (new / old) | Plan pairs ranked opposite to their cost (new / old) |
+|---|---|---|---|---|
+| P1 | 0.301 / 0.799 | 0.066 / 0.066 | 0.099 / 0.086 | 0 of 3 / 0 of 3 |
+| P2 | 0.176 / 0.903 | 0.0065 / 0.0137 | 0.0088 / 0.0174 | 9 of 65 (13.8%) / 8 of 65 (12.3%) |
+| P3 | 0.380 / 1.039 | 0.0140 / 0.0114 | 0.0194 / 0.0141 | 2 of 66 (3.0%) / 2 of 66 (3.0%) |
+| P4 | 0.574 / 1.779 | 0.0081 / – | 0.0102 / 0.0092 | 177 of 1767 (10.0%) / 140 (7.9%) |
+| P5 | 0.602 / 1.779 | 0.0038 / – | 0.0046 / 0.0036 | 8415 of 64521 (13.0%) / 6705 (10.4%) |
+
+- **The raw gap is smaller in the new formulation** because the cost is no longer squared. That alone means nothing: QAOA sees the gap relative to the whole energy landscape, so only the two normalized columns matter. On those the formulations are about equal. The new one is ahead on P1, P3, P4 and P5, and behind on P2, where the old formulation's gap is moot because 10 fake bitstrings sit below its best plan.
+- **One real, small degradation: ranking the non-best plans.** Both formulations put some pairs of plans in the opposite order to their true cost, because both are stand-ins for the sum of result sizes (Claim 4 in §5). The linear version does it slightly more often: 13.8% vs 12.3% on P2, 10.0% vs 7.9% on P4, 13.0% vs 10.4% on P5. The squared version weights big results more, which tracks the sum a little better. The **best plan is still ranked first by both** in all five problems. The degradation is in the ordering of mediocre plans, which affects how good the *second-best* answers are when QAOA misses the best one.
+
+### 9.5 Pros and cons of each Hamiltonian
+
+| | New ("qaoa") | Old ("q2o") |
+|---|---|---|
+| **Lowest energy = a real plan** | Yes on P1–P5 (exact solver); provable with λ_safe (§5 Correctness) | No on P1 and P2: λ too small for the squared cost |
+| **Qubits** | R(R − 2), independent of the number of conditions | (R + P)(R − 2); 2–3.4× more on P4/P5 |
+| **Two-qubit terms (circuit depth)** | 3–78 | 10–330 (2–6× more) |
+| **Coefficient spread** | 2–55× | up to 164×, with some tiny terms (harder on noisy hardware) |
+| **Penalty weight** | Derived from the data; one cheat saves at most one table's log size | Number of steps; not tied to how much a cheat saves |
+| **Ranking of non-best plans** | Slightly worse (product of sizes) | Slightly better (squared logs weight big results) |
+| **Raw best-vs-second gap** | Smaller (no square) | Larger, but on P1/P2 fake states sit below it |
+| **Fits in a 25-qubit simulation** | Up to 6 tables | Up to 4 tables |
+
+**Bottom line:** the new Hamiltonian is smaller, shallower, has better-conditioned coefficients, and its lowest energy is always the best plan. The price is a slightly less faithful ordering of mediocre plans. No measure shows a loss for the best plan.

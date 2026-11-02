@@ -14,7 +14,7 @@ library(glue)
 ```
 
 Plots for the formulation change described in `docs/problem-formulation.md`.
-All runs: COBYLA, reps 2, at most 1000 iterations, trial 1.
+All runs: COBYLA, reps 2, at most 1000 iterations, trial 1, except section 10 (NFT).
 
 - **Random initialization:** all four angles start at 0.5. Old and new formulations were run with the same code; only `qubo-formulation` differs.
 - **Single-start SPIQ:** the original SPIQ: one GA search (`--n_starts 1`, seed 0, `--n_gens 2000`), one exported point, one QAOA run (`--spiq_starts 1`). New formulation only.
@@ -34,7 +34,7 @@ normalized plots (1 = starting energy, 0 = lowest possible energy), not the raw 
 ```{r}
 # Paths and per-run constants. Chunks run with the working directory set to graphs/.
 root <- normalizePath("..")
-sub_dir <- "ExperimentalAnalysis/IBMQ/QPUPerformance/Results/CPU_Data/iterations_1000/reps_2/COBYLA"
+sub_dir <- "ExperimentalAnalysis/IBMQ/QPUPerformance/Results/CPU_Data/iterations_1000/reps_2"  # + /<optimizer>
 
 # init: "random", "single-SPIQ" or "multi-SPIQ"; dir: folder under outputs/ holding WeekNN (readouts) and energy/WeekNN
 runs <- tribble(
@@ -56,17 +56,20 @@ runs <- tribble(
   "P3", "qaoa", "single-SPIQ", "spiq",         107, 2, 2.3344538, 29,
   "P4", "qaoa", "single-SPIQ", "spiq",         108, 3, 4.9084850, 165,   # 5 tables, 15 qubits
   "P5", "qaoa", "single-SPIQ", "spiq",         109, 4, 8.3398488, 1605   # 6 tables, 24 qubits
-)
+) %>% mutate(optimizer = "COBYLA")
+# NFT from the same single-start SPIQ points as Week105-109 (only the optimizer differs)
+runs <- bind_rows(runs, runs %>% filter(init == "single-SPIQ") %>%
+  mutate(init = "single-SPIQ + NFT", dir = "nft", week = week + 7, optimizer = "NFT"))
 
 # suffix "" = the run's energy log (the winning start for multi-SPIQ); "_start0" etc. = one start
 energy_csv <- function(r, suffix = "") {
-  glue("{root}/outputs/{r$dir}/energy/Week{r$week}/{sub_dir}/input{r$input_idx}/trial1/energy_per_iteration_1000_COBYLA_2_1{suffix}.csv")
+  glue("{root}/outputs/{r$dir}/energy/Week{r$week}/{sub_dir}/{r$optimizer}/input{r$input_idx}/trial1/energy_per_iteration_1000_{r$optimizer}_2_1{suffix}.csv")
 }
 final_readout <- function(r) {
-  glue("{root}/outputs/{r$dir}/Week{r$week}/{sub_dir}/trial_1/readout_summary.csv")
+  glue("{root}/outputs/{r$dir}/Week{r$week}/{sub_dir}/{r$optimizer}/trial_1/readout_summary.csv")
 }
 first_readout <- function(r) {
-  glue("{root}/outputs/{r$dir}/Week{r$week}/{sub_dir}/input{r$input_idx}/trial1/readout_summary_eval1.csv")
+  glue("{root}/outputs/{r$dir}/Week{r$week}/{sub_dir}/{r$optimizer}/input{r$input_idx}/trial1/readout_summary_eval1.csv")
 }
 run_of <- function(p, f, i = "random") runs %>% filter(problem == p, formulation == f, init == i)
 ```
@@ -268,7 +271,7 @@ readout_boxplots <- function(p, f, i = "random") {
     path <- if (stage == "final") final_readout(r) else first_readout(r)
     for (fb in c(FALSE, TRUE)) {
       print(glue("{p}, {f}, {i} (Week{r$week}), {stage}, used_fallback={fb}; optimal cost {r$target}"))
-      res <- cost_energy_boxplot_prob(path, targetCol="cost", thresh=150, opt="COBYLA", fallback=fb, target=r$target,
+      res <- cost_energy_boxplot_prob(path, targetCol="cost", thresh=150, opt=r$optimizer, fallback=fb, target=r$target,
                                       label = glue("{p} {f} {i} (Week{r$week}), {stage}: "))
       record_ratio(p, f, i, stage, fb, res, r$target)
       pct <- unlist(res)
@@ -591,7 +594,7 @@ ratio_bars <- function(df, fill_col, values, title) {
     labs(x = "Workload", y = "Optimal ratio", fill = fill_col, title = title)
 }
 spiq_energy <- summarise_energy(runs %>% filter(init == "multi-SPIQ"))
-all_energy <- summarise_energy(runs)
+all_energy <- summarise_energy(runs %>% filter(optimizer == "COBYLA"))
 ```
 
 ## 7.1 Multi-start SPIQ: old vs new formulation
@@ -823,4 +826,49 @@ start_summary %>%
   facet_wrap(~problem) +
   theme_bw() +
   labs(x = NULL, y = "share of samples", title = "SPIQ starting points: old (q2o) vs new (qaoa) formulation")
+```
+
+# 10. NFT vs COBYLA (new formulation, single-start SPIQ, Week112–116)
+
+The same single-start SPIQ starting points as Week105–109. Only the optimizer changes: NFT (Nakanishi–Fujii–Todo, `--optimizer 3`), capped at the same 1000 energy evaluations as COBYLA. NFT fits the energy as a sinusoid in one angle at a time, then jumps to that angle's minimum. That model is exact when each angle drives a single rotation gate, which is the case for SPIQ's relaxed circuit, with one angle per gate.
+
+```{r}
+for (p in c("P1", "P2", "P3", "P4", "P5")) readout_boxplots(p, "qaoa", "single-SPIQ + NFT")
+```
+
+## Summary
+```{r}
+opt_ratios <- do.call(rbind, ratio_rows) %>%
+  filter(formulation == "qaoa", init %in% c("single-SPIQ", "single-SPIQ + NFT"), stage == "final") %>%
+  mutate(optimizer = if_else(init == "single-SPIQ", "COBYLA", "NFT"),
+         decoding = if_else(used_fallback, "fallback", "raw"))
+opt_ratios %>%
+  select(problem, optimizer, decoding, optimal_ratio) %>%
+  pivot_wider(names_from = decoding, values_from = optimal_ratio) %>%
+  left_join(summarise_energy(runs %>% filter(formulation == "qaoa", init %in% c("single-SPIQ", "single-SPIQ + NFT"))) %>%
+              mutate(optimizer = if_else(init == "single-SPIQ", "COBYLA", "NFT")) %>%
+              select(problem, optimizer, week, evaluations, ground_energy, start_energy, best_energy, gap_to_ground, share_to_bottom),
+            by = c("problem", "optimizer")) %>%
+  arrange(problem, optimizer) %>%
+  knitr::kable(digits = 3, caption = "Final optimal ratio and energies: COBYLA (Week105-109) vs NFT (Week112-116), same SPIQ start")
+```
+```{r, fig.width=10, fig.height=4}
+ggplot(opt_ratios, aes(x = problem, y = optimal_ratio, fill = optimizer)) +
+  geom_col(position = position_dodge(width = 0.8), width = 0.75) +
+  geom_text(aes(label = sprintf("%.3f", optimal_ratio)), position = position_dodge(width = 0.8), vjust = -0.3, size = 3) +
+  facet_wrap(~decoding) +
+  scale_fill_manual(values = c(COBYLA = "grey55", NFT = "purple")) +
+  theme_bw() +
+  labs(x = "Workload", y = "Optimal ratio (final)", title = "COBYLA vs NFT from the same single-start SPIQ point")
+```
+
+## Energy over iterations
+```{r}
+for (p in c("P1", "P2", "P3", "P4", "P5")) {
+  plot_energy_curves(lapply(c("single-SPIQ", "single-SPIQ + NFT"), function(i) {
+    r <- run_of(p, "qaoa", i)
+    list(file = energy_csv(r), label = glue("{r$optimizer} (Week{r$week})"),
+         col = if (r$optimizer == "NFT") "purple" else "grey40", ground = r$ground_energy)
+  }), normalise = FALSE, main = glue("{p}: COBYLA vs NFT, same SPIQ start"))
+}
 ```

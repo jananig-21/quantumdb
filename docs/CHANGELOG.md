@@ -5,6 +5,45 @@ See `RESULTS_INDEX.md` for which week folder holds which run.
 
 ---
 
+## 2026-10-28: General form of both Hamiltonians, and the experiment log moved to the results index
+
+**Files:** `base/test_hamiltonian_form.py` (new), `docs/problem-formulation.md`, `docs/RESULTS_INDEX.md`.
+
+**What changed**
+- `problem-formulation.md` §9.0 (new): the general formulas for the old and new Hamiltonians: the QUBO weights, the full Pauli (Z/ZZ) form of both, and the counting rule for the ZZ terms.
+- `test_hamiltonian_form.py` (new): builds every coefficient from those formulas (including the closed-form Z coefficients of both formulations) and compares it with `qubo.to_ising()` for P1–P5 and both formulations.
+- The experiment log (old §9) moved to `RESULTS_INDEX.md`, under "Findings: formulation experiments". Verification is now §9.
+
+**Why:** the user asked for the general form of the Hamiltonians, and for the experiment log to live in one place.
+
+**Checks:** `test_hamiltonian_form.py` passes in the container for all 10 cases, with a maximum error of 3e-13.
+
+---
+
+## 2026-10-27: Hamiltonian verification, plain-language intuition, and NFT optimizer runs (Week112–116)
+
+**Files:** `base/IBMQExperiments.py`, `base/hamiltonian_report.py` (new), `graphs/nft.rmd` (new), `logs/run_nft.sh` (new), `docs/hamiltonians/` (new), `graphs/formulation.rmd`, `docs/problem-formulation.md`.
+
+**What changed**
+- `IBMQExperiments.py`: `--optimizer 3` = NFT (`NFT(maxfev=iterations)`), so it gets the same 1000-evaluation budget as COBYLA. Results go under `.../reps_2/NFT/`.
+- `hamiltonian_report.py` (new): for P1–P5 and both formulations, it writes the full Ising Hamiltonian and counts the terms, the coefficient range and the offset. Up to 24 qubits it also runs the exact eigensolver plus a brute force over all 2^n bitstrings. It checks whether the lowest energy is a real plan and how many bitstrings sit below the best plan, and computes the best-vs-second-best gap. Output goes to `docs/hamiltonians/`.
+- `problem-formulation.md`: a new "The intuition, in plain terms" subsection at the start of §5, with database analogies, and a new "Verification" section (now §9) covering the Hamiltonians, the eigensolver, degradation checks, and pros and cons.
+- `graphs/nft.rmd` (new): NFT vs COBYLA on one plot per workload (energy over iterations plus a normalized best-so-far panel) and optimal-ratio tables, first vs final iteration, for raw and fallback decoding. Its optimal ratios match `formulation.rmd` (P4 fallback 0.252).
+- `formulation.rmd`: run paths now include the optimizer (an `optimizer` column; COBYLA for all earlier runs). New section 10 compares NFT and COBYLA from the same single-start SPIQ points.
+
+**Why:** the user asked for the Hamiltonians and eigensolver results to be compared across formulations and documented, for the intuition behind the changes, and for P1–P5 to be run with NFT instead of COBYLA.
+
+**Checks**
+- The eigensolver and the brute force agree to within 1e-13 in every case.
+- The best-plan energies match the exact ground energies for the new formulation.
+- The NFT runs reuse the Week105–109 SPIQ JSONs, so only the optimizer differs.
+- `formulation.rmd` knits without errors through section 10. Sections 1–9 still find all their runs now that the paths include the optimizer.
+- The `hamiltonian_report.py` rerun in the container matches the numbers in §9 "Verification" of `problem-formulation.md`.
+
+**Results:** NFT vs COBYLA final energies: P1 and P3 at the ground state with both. P2 4.860 vs 5.100. P4 7.390 vs 7.380. P5 17.504 vs 17.482. The share at the best plan is unchanged on every problem. Details are in `RESULTS_INDEX.md`, "Findings".
+
+---
+
 ## 2026-10-21: Old vs new formulation on P4/P5, comparing SPIQ starting points only (Week110–111)
 
 **Files:** `base/config.py`, `base/spiq_initialization.py`, `base/spiq_sample.py` (new), `logs/run_spiq_only.sh` (new), `graphs/formulation.rmd`, docs.
@@ -20,7 +59,7 @@ See `RESULTS_INDEX.md` for which week folder holds which run.
 **Checks**
 - `spiq_sample.py` asserts that the rebuilt stim circuit gives the GA's energy exactly, and that the mean sampled QUBO energy is within 5 standard errors of the SPIQ expectation, which checks the bit order. On Week108/109 it reproduced the QAOA first-iteration readouts (P4: 330 at 50%).
 - Both q2o runs finished. `formulation.rmd` knits without errors (118 figures).
-- Results: valid plans P4 0.247 (new) vs 0.003 (old), P5 0.065 vs 0.000 (`docs/problem-formulation.md` §9).
+- Results: valid plans P4 0.247 (new) vs 0.003 (old), P5 0.065 vs 0.000 (`docs/RESULTS_INDEX.md`, "Findings").
 
 ---
 
@@ -41,7 +80,7 @@ See `RESULTS_INDEX.md` for which week folder holds which run.
 - `test_qubo_formulation.py` passes in the container. Ground states are valid and optimal: P4 cost 165, energy 4.908; P5 cost 1605, energy 8.340.
 - Both runs finished without errors and wrote `pcirc.qpy`.
 - `formulation.rmd` knits without errors (109 figures).
-- Results: optimal ratio P4 0.000 raw / 0.252 fallback, P5 0.000 (`docs/problem-formulation.md` §9).
+- Results: optimal ratio P4 0.000 raw / 0.252 fallback, P5 0.000 (`docs/RESULTS_INDEX.md`, "Findings").
 
 ---
 
@@ -59,7 +98,7 @@ See `RESULTS_INDEX.md` for which week folder holds which run.
 **Checks**
 - All three runs loaded SPIQ (`[diag]` rel_err ≤ 1e-15) and wrote `pcirc.qpy`.
 - `formulation.rmd` knits without errors (98 figures).
-- Results: optimal ratio P1 1.000, P2 0.000, P3 1.000 (`docs/problem-formulation.md` §9).
+- Results: optimal ratio P1 1.000, P2 0.000, P3 1.000 (`docs/RESULTS_INDEX.md`, "Findings").
 
 ---
 
@@ -84,7 +123,7 @@ See `RESULTS_INDEX.md` for which week folder holds which run.
 **Checks**
 - All three runs loaded SPIQ ([diag] rel_err ≤ 1.3e-15) and wrote `pcirc.qpy`.
 - `formulation.rmd` knits without errors (82 figures).
-- The results are in `docs/problem-formulation.md` §9: optimal ratio P1 1.000, P2 0.503, P3 1.000.
+- The results are in `docs/RESULTS_INDEX.md`, "Findings": optimal ratio P1 1.000, P2 0.503, P3 1.000.
 
 ---
 
@@ -102,7 +141,7 @@ The boxplot and energy helpers come from `qcdkm.rmd` and `visualization.rmd`. Th
 
 **Why:** visual record of the formulation change. Energies of the two formulations are on different scales, so the comparisons use a normalized energy (1 = start, 0 = lowest possible).
 
-**Checks:** the file knits with `rmarkdown::render` without errors (39 figures). Its tables match `docs/problem-formulation.md` §9.
+**Checks:** the file knits with `rmarkdown::render` without errors (39 figures). Its tables match `docs/RESULTS_INDEX.md`, "Findings".
 
 ---
 
@@ -128,7 +167,7 @@ The boxplot and energy helpers come from `qcdkm.rmd` and `visualization.rmd`. Th
 - An exact evaluation of every bitstring (numpy, no QAOA) gives a real, best-cost plan as the lowest energy for P1–P3.
 - The checker gives 15 / 315 / 29.4.
 - `test_qubo_formulation.py` passes in the container. It first failed because `objective.evaluate` rejects tuples, so the test now passes `list(x)`.
-- The first runs with the new formulation are random-start Week96–98 (`docs/RESULTS_INDEX.md`, `docs/problem-formulation.md` §9).
+- The first runs with the new formulation are random-start Week96–98 (`docs/RESULTS_INDEX.md`, `docs/RESULTS_INDEX.md`, "Findings").
 
 ---
 

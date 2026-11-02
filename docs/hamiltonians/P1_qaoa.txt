@@ -1,0 +1,8 @@
+# P1 qaoa: 3 qubits, lambda=1.431133, Ising offset=2.669694
+# H = offset + sum coeff * Pauli (qiskit labels, qubit 0 rightmost)
++0.315051 ZII
++0.627521 IZI
++0.465566 IIZ
++0.465566 ZZI
++0.715566 ZIZ
++0.465566 IZZ
