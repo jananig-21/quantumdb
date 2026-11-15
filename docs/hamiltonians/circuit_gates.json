@@ -1,0 +1,1240 @@
+[
+ {
+  "problem": "P1",
+  "f": "qaoa",
+  "R": 3,
+  "P": 2,
+  "n": 3,
+  "z": 3,
+  "zz": 3,
+  "reps": 1,
+  "plain": {
+   "ops": {
+    "rz": 6,
+    "cx": 6,
+    "h": 3,
+    "rx": 3
+   },
+   "total": 18,
+   "two_q": 6,
+   "depth": 12,
+   "two_q_depth": 6,
+   "params": 2
+  },
+  "spiq": {
+   "ops": {
+    "rz": 12,
+    "s": 9,
+    "sx": 9,
+    "cx": 6
+   },
+   "total": 36,
+   "two_q": 6,
+   "depth": 18,
+   "two_q_depth": 6,
+   "params": 9
+  }
+ },
+ {
+  "problem": "P1",
+  "f": "qaoa",
+  "R": 3,
+  "P": 2,
+  "n": 3,
+  "z": 3,
+  "zz": 3,
+  "reps": 2,
+  "plain": {
+   "ops": {
+    "rz": 12,
+    "cx": 12,
+    "rx": 6,
+    "h": 3
+   },
+   "total": 33,
+   "two_q": 12,
+   "depth": 23,
+   "two_q_depth": 12,
+   "params": 4
+  },
+  "spiq": {
+   "ops": {
+    "rz": 24,
+    "sx": 15,
+    "s": 12,
+    "cx": 12
+   },
+   "total": 63,
+   "two_q": 12,
+   "depth": 33,
+   "two_q_depth": 12,
+   "params": 18
+  },
+  "hardware": {
+   "ops": {
+    "rz": 36,
+    "cx": 19,
+    "sx": 15,
+    "measure": 3
+   },
+   "total": 70,
+   "two_q": 19,
+   "depth": 46,
+   "two_q_depth": 19,
+   "params": 18,
+   "swaps": 2.3333333333333335,
+   "esp": 0.8144251156422478
+  }
+ },
+ {
+  "problem": "P1",
+  "f": "qaoa",
+  "R": 3,
+  "P": 2,
+  "n": 3,
+  "z": 3,
+  "zz": 3,
+  "reps": 3,
+  "plain": {
+   "ops": {
+    "rz": 18,
+    "cx": 18,
+    "rx": 9,
+    "h": 3
+   },
+   "total": 48,
+   "two_q": 18,
+   "depth": 34,
+   "two_q_depth": 18,
+   "params": 6
+  },
+  "spiq": {
+   "ops": {
+    "rz": 36,
+    "sx": 21,
+    "cx": 18,
+    "s": 15
+   },
+   "total": 90,
+   "two_q": 18,
+   "depth": 48,
+   "two_q_depth": 18,
+   "params": 27
+  }
+ },
+ {
+  "problem": "P1",
+  "f": "q2o",
+  "R": 3,
+  "P": 2,
+  "n": 5,
+  "z": 5,
+  "zz": 10,
+  "reps": 1,
+  "plain": {
+   "ops": {
+    "cx": 20,
+    "rz": 15,
+    "h": 5,
+    "rx": 5
+   },
+   "total": 45,
+   "two_q": 20,
+   "depth": 24,
+   "two_q_depth": 14,
+   "params": 2
+  },
+  "spiq": {
+   "ops": {
+    "rz": 25,
+    "cx": 20,
+    "s": 15,
+    "sx": 15
+   },
+   "total": 75,
+   "two_q": 20,
+   "depth": 30,
+   "two_q_depth": 14,
+   "params": 20
+  }
+ },
+ {
+  "problem": "P1",
+  "f": "q2o",
+  "R": 3,
+  "P": 2,
+  "n": 5,
+  "z": 5,
+  "zz": 10,
+  "reps": 2,
+  "plain": {
+   "ops": {
+    "cx": 40,
+    "rz": 30,
+    "rx": 10,
+    "h": 5
+   },
+   "total": 85,
+   "two_q": 40,
+   "depth": 41,
+   "two_q_depth": 24,
+   "params": 4
+  },
+  "spiq": {
+   "ops": {
+    "rz": 50,
+    "cx": 40,
+    "sx": 25,
+    "s": 20
+   },
+   "total": 135,
+   "two_q": 40,
+   "depth": 51,
+   "two_q_depth": 24,
+   "params": 40
+  },
+  "hardware": {
+   "ops": {
+    "rz": 78,
+    "cx": 65,
+    "sx": 30,
+    "measure": 5
+   },
+   "total": 173,
+   "two_q": 65,
+   "depth": 112,
+   "two_q_depth": 61,
+   "params": 40,
+   "swaps": 8.333333333333334,
+   "esp": 0.501355015015655
+  }
+ },
+ {
+  "problem": "P1",
+  "f": "q2o",
+  "R": 3,
+  "P": 2,
+  "n": 5,
+  "z": 5,
+  "zz": 10,
+  "reps": 3,
+  "plain": {
+   "ops": {
+    "cx": 60,
+    "rz": 45,
+    "rx": 15,
+    "h": 5
+   },
+   "total": 125,
+   "two_q": 60,
+   "depth": 58,
+   "two_q_depth": 34,
+   "params": 6
+  },
+  "spiq": {
+   "ops": {
+    "rz": 75,
+    "cx": 60,
+    "sx": 35,
+    "s": 25
+   },
+   "total": 195,
+   "two_q": 60,
+   "depth": 72,
+   "two_q_depth": 34,
+   "params": 60
+  }
+ },
+ {
+  "problem": "P2",
+  "f": "qaoa",
+  "R": 4,
+  "P": 2,
+  "n": 8,
+  "z": 8,
+  "zz": 16,
+  "reps": 1,
+  "plain": {
+   "ops": {
+    "cx": 32,
+    "rz": 24,
+    "h": 8,
+    "rx": 8
+   },
+   "total": 72,
+   "two_q": 32,
+   "depth": 24,
+   "two_q_depth": 14,
+   "params": 2
+  },
+  "spiq": {
+   "ops": {
+    "rz": 40,
+    "cx": 32,
+    "s": 24,
+    "sx": 24
+   },
+   "total": 120,
+   "two_q": 32,
+   "depth": 30,
+   "two_q_depth": 14,
+   "params": 32
+  }
+ },
+ {
+  "problem": "P2",
+  "f": "qaoa",
+  "R": 4,
+  "P": 2,
+  "n": 8,
+  "z": 8,
+  "zz": 16,
+  "reps": 2,
+  "plain": {
+   "ops": {
+    "cx": 64,
+    "rz": 48,
+    "rx": 16,
+    "h": 8
+   },
+   "total": 136,
+   "two_q": 64,
+   "depth": 38,
+   "two_q_depth": 22,
+   "params": 4
+  },
+  "spiq": {
+   "ops": {
+    "rz": 80,
+    "cx": 64,
+    "sx": 40,
+    "s": 32
+   },
+   "total": 216,
+   "two_q": 64,
+   "depth": 48,
+   "two_q_depth": 22,
+   "params": 64
+  },
+  "hardware": {
+   "ops": {
+    "rz": 150,
+    "cx": 124,
+    "sx": 70,
+    "measure": 8,
+    "x": 4
+   },
+   "total": 348,
+   "two_q": 124,
+   "depth": 132,
+   "two_q_depth": 56,
+   "params": 64,
+   "swaps": 20.0,
+   "esp": 0.25870447252382217
+  }
+ },
+ {
+  "problem": "P2",
+  "f": "qaoa",
+  "R": 4,
+  "P": 2,
+  "n": 8,
+  "z": 8,
+  "zz": 16,
+  "reps": 3,
+  "plain": {
+   "ops": {
+    "cx": 96,
+    "rz": 72,
+    "rx": 24,
+    "h": 8
+   },
+   "total": 200,
+   "two_q": 96,
+   "depth": 52,
+   "two_q_depth": 30,
+   "params": 6
+  },
+  "spiq": {
+   "ops": {
+    "rz": 120,
+    "cx": 96,
+    "sx": 56,
+    "s": 40
+   },
+   "total": 312,
+   "two_q": 96,
+   "depth": 66,
+   "two_q_depth": 30,
+   "params": 96
+  }
+ },
+ {
+  "problem": "P2",
+  "f": "q2o",
+  "R": 4,
+  "P": 2,
+  "n": 12,
+  "z": 12,
+  "zz": 34,
+  "reps": 1,
+  "plain": {
+   "ops": {
+    "cx": 68,
+    "rz": 46,
+    "h": 12,
+    "rx": 12
+   },
+   "total": 138,
+   "two_q": 68,
+   "depth": 33,
+   "two_q_depth": 20,
+   "params": 2
+  },
+  "spiq": {
+   "ops": {
+    "rz": 70,
+    "cx": 68,
+    "s": 36,
+    "sx": 36
+   },
+   "total": 210,
+   "two_q": 68,
+   "depth": 39,
+   "two_q_depth": 20,
+   "params": 58
+  }
+ },
+ {
+  "problem": "P2",
+  "f": "q2o",
+  "R": 4,
+  "P": 2,
+  "n": 12,
+  "z": 12,
+  "zz": 34,
+  "reps": 2,
+  "plain": {
+   "ops": {
+    "cx": 136,
+    "rz": 92,
+    "rx": 24,
+    "h": 12
+   },
+   "total": 264,
+   "two_q": 136,
+   "depth": 53,
+   "two_q_depth": 32,
+   "params": 4
+  },
+  "spiq": {
+   "ops": {
+    "rz": 140,
+    "cx": 136,
+    "sx": 60,
+    "s": 48
+   },
+   "total": 384,
+   "two_q": 136,
+   "depth": 63,
+   "two_q_depth": 32,
+   "params": 116
+  },
+  "hardware": {
+   "ops": {
+    "cx": 275,
+    "rz": 272,
+    "sx": 125,
+    "measure": 12,
+    "x": 9
+   },
+   "total": 681,
+   "two_q": 275,
+   "depth": 201,
+   "two_q_depth": 100,
+   "params": 116,
+   "swaps": 46.333333333333336,
+   "esp": 0.03356056155155627
+  }
+ },
+ {
+  "problem": "P2",
+  "f": "q2o",
+  "R": 4,
+  "P": 2,
+  "n": 12,
+  "z": 12,
+  "zz": 34,
+  "reps": 3,
+  "plain": {
+   "ops": {
+    "cx": 204,
+    "rz": 138,
+    "rx": 36,
+    "h": 12
+   },
+   "total": 390,
+   "two_q": 204,
+   "depth": 73,
+   "two_q_depth": 44,
+   "params": 6
+  },
+  "spiq": {
+   "ops": {
+    "rz": 210,
+    "cx": 204,
+    "sx": 84,
+    "s": 60
+   },
+   "total": 558,
+   "two_q": 204,
+   "depth": 87,
+   "two_q_depth": 44,
+   "params": 174
+  }
+ },
+ {
+  "problem": "P3",
+  "f": "qaoa",
+  "R": 4,
+  "P": 6,
+  "n": 8,
+  "z": 8,
+  "zz": 16,
+  "reps": 1,
+  "plain": {
+   "ops": {
+    "cx": 32,
+    "rz": 24,
+    "h": 8,
+    "rx": 8
+   },
+   "total": 72,
+   "two_q": 32,
+   "depth": 24,
+   "two_q_depth": 14,
+   "params": 2
+  },
+  "spiq": {
+   "ops": {
+    "rz": 40,
+    "cx": 32,
+    "s": 24,
+    "sx": 24
+   },
+   "total": 120,
+   "two_q": 32,
+   "depth": 30,
+   "two_q_depth": 14,
+   "params": 32
+  }
+ },
+ {
+  "problem": "P3",
+  "f": "qaoa",
+  "R": 4,
+  "P": 6,
+  "n": 8,
+  "z": 8,
+  "zz": 16,
+  "reps": 2,
+  "plain": {
+   "ops": {
+    "cx": 64,
+    "rz": 48,
+    "rx": 16,
+    "h": 8
+   },
+   "total": 136,
+   "two_q": 64,
+   "depth": 38,
+   "two_q_depth": 22,
+   "params": 4
+  },
+  "spiq": {
+   "ops": {
+    "rz": 80,
+    "cx": 64,
+    "sx": 40,
+    "s": 32
+   },
+   "total": 216,
+   "two_q": 64,
+   "depth": 48,
+   "two_q_depth": 22,
+   "params": 64
+  },
+  "hardware": {
+   "ops": {
+    "rz": 150,
+    "cx": 124,
+    "sx": 70,
+    "measure": 8,
+    "x": 4
+   },
+   "total": 348,
+   "two_q": 124,
+   "depth": 132,
+   "two_q_depth": 56,
+   "params": 64,
+   "swaps": 20.0,
+   "esp": 0.25870447252382217
+  }
+ },
+ {
+  "problem": "P3",
+  "f": "qaoa",
+  "R": 4,
+  "P": 6,
+  "n": 8,
+  "z": 8,
+  "zz": 16,
+  "reps": 3,
+  "plain": {
+   "ops": {
+    "cx": 96,
+    "rz": 72,
+    "rx": 24,
+    "h": 8
+   },
+   "total": 200,
+   "two_q": 96,
+   "depth": 52,
+   "two_q_depth": 30,
+   "params": 6
+  },
+  "spiq": {
+   "ops": {
+    "rz": 120,
+    "cx": 96,
+    "sx": 56,
+    "s": 40
+   },
+   "total": 312,
+   "two_q": 96,
+   "depth": 66,
+   "two_q_depth": 30,
+   "params": 96
+  }
+ },
+ {
+  "problem": "P3",
+  "f": "q2o",
+  "R": 4,
+  "P": 6,
+  "n": 20,
+  "z": 20,
+  "zz": 94,
+  "reps": 1,
+  "plain": {
+   "ops": {
+    "cx": 188,
+    "rz": 114,
+    "h": 20,
+    "rx": 20
+   },
+   "total": 342,
+   "two_q": 188,
+   "depth": 57,
+   "two_q_depth": 36,
+   "params": 2
+  },
+  "spiq": {
+   "ops": {
+    "cx": 188,
+    "rz": 154,
+    "s": 60,
+    "sx": 60
+   },
+   "total": 462,
+   "two_q": 188,
+   "depth": 63,
+   "two_q_depth": 36,
+   "params": 134
+  }
+ },
+ {
+  "problem": "P3",
+  "f": "q2o",
+  "R": 4,
+  "P": 6,
+  "n": 20,
+  "z": 20,
+  "zz": 94,
+  "reps": 2,
+  "plain": {
+   "ops": {
+    "cx": 376,
+    "rz": 228,
+    "rx": 40,
+    "h": 20
+   },
+   "total": 664,
+   "two_q": 376,
+   "depth": 89,
+   "two_q_depth": 56,
+   "params": 4
+  },
+  "spiq": {
+   "ops": {
+    "cx": 376,
+    "rz": 308,
+    "sx": 100,
+    "s": 80
+   },
+   "total": 864,
+   "two_q": 376,
+   "depth": 99,
+   "two_q_depth": 56,
+   "params": 268
+  },
+  "hardware": {
+   "ops": {
+    "cx": 851,
+    "rz": 578,
+    "sx": 245,
+    "measure": 20,
+    "x": 19
+   },
+   "total": 1693,
+   "two_q": 851,
+   "depth": 398,
+   "two_q_depth": 242,
+   "params": 268,
+   "swaps": 158.33333333333334,
+   "esp": 3.183280603243334e-06
+  }
+ },
+ {
+  "problem": "P3",
+  "f": "q2o",
+  "R": 4,
+  "P": 6,
+  "n": 20,
+  "z": 20,
+  "zz": 94,
+  "reps": 3,
+  "plain": {
+   "ops": {
+    "cx": 564,
+    "rz": 342,
+    "rx": 60,
+    "h": 20
+   },
+   "total": 986,
+   "two_q": 564,
+   "depth": 121,
+   "two_q_depth": 76,
+   "params": 6
+  },
+  "spiq": {
+   "ops": {
+    "cx": 564,
+    "rz": 462,
+    "sx": 140,
+    "s": 100
+   },
+   "total": 1266,
+   "two_q": 564,
+   "depth": 135,
+   "two_q_depth": 76,
+   "params": 402
+  }
+ },
+ {
+  "problem": "P4",
+  "f": "qaoa",
+  "R": 5,
+  "P": 5,
+  "n": 15,
+  "z": 15,
+  "zz": 40,
+  "reps": 1,
+  "plain": {
+   "ops": {
+    "cx": 80,
+    "rz": 55,
+    "h": 15,
+    "rx": 15
+   },
+   "total": 165,
+   "two_q": 80,
+   "depth": 45,
+   "two_q_depth": 28,
+   "params": 2
+  },
+  "spiq": {
+   "ops": {
+    "rz": 85,
+    "cx": 80,
+    "s": 45,
+    "sx": 45
+   },
+   "total": 255,
+   "two_q": 80,
+   "depth": 51,
+   "two_q_depth": 28,
+   "params": 70
+  }
+ },
+ {
+  "problem": "P4",
+  "f": "qaoa",
+  "R": 5,
+  "P": 5,
+  "n": 15,
+  "z": 15,
+  "zz": 40,
+  "reps": 2,
+  "plain": {
+   "ops": {
+    "cx": 160,
+    "rz": 110,
+    "rx": 30,
+    "h": 15
+   },
+   "total": 315,
+   "two_q": 160,
+   "depth": 65,
+   "two_q_depth": 40,
+   "params": 4
+  },
+  "spiq": {
+   "ops": {
+    "rz": 170,
+    "cx": 160,
+    "sx": 75,
+    "s": 60
+   },
+   "total": 465,
+   "two_q": 160,
+   "depth": 75,
+   "two_q_depth": 40,
+   "params": 140
+  },
+  "hardware": {
+   "ops": {
+    "cx": 431,
+    "rz": 357,
+    "sx": 165,
+    "measure": 15,
+    "x": 7
+   },
+   "total": 960,
+   "two_q": 431,
+   "depth": 308,
+   "two_q_depth": 168,
+   "params": 140,
+   "swaps": 90.33333333333333,
+   "esp": 0.00017666660983382945
+  }
+ },
+ {
+  "problem": "P4",
+  "f": "qaoa",
+  "R": 5,
+  "P": 5,
+  "n": 15,
+  "z": 15,
+  "zz": 40,
+  "reps": 3,
+  "plain": {
+   "ops": {
+    "cx": 240,
+    "rz": 165,
+    "rx": 45,
+    "h": 15
+   },
+   "total": 465,
+   "two_q": 240,
+   "depth": 94,
+   "two_q_depth": 58,
+   "params": 6
+  },
+  "spiq": {
+   "ops": {
+    "rz": 255,
+    "cx": 240,
+    "sx": 105,
+    "s": 75
+   },
+   "total": 675,
+   "two_q": 240,
+   "depth": 108,
+   "two_q_depth": 58,
+   "params": 210
+  }
+ },
+ {
+  "problem": "P4",
+  "f": "q2o",
+  "R": 5,
+  "P": 5,
+  "n": 30,
+  "z": 30,
+  "zz": 145,
+  "reps": 1,
+  "plain": {
+   "ops": {
+    "cx": 290,
+    "rz": 175,
+    "h": 30,
+    "rx": 30
+   },
+   "total": 525,
+   "two_q": 290,
+   "depth": 72,
+   "two_q_depth": 46,
+   "params": 2
+  },
+  "spiq": {
+   "ops": {
+    "cx": 290,
+    "rz": 235,
+    "s": 90,
+    "sx": 90
+   },
+   "total": 705,
+   "two_q": 290,
+   "depth": 78,
+   "two_q_depth": 46,
+   "params": 205
+  }
+ },
+ {
+  "problem": "P4",
+  "f": "q2o",
+  "R": 5,
+  "P": 5,
+  "n": 30,
+  "z": 30,
+  "zz": 145,
+  "reps": 2,
+  "plain": {
+   "ops": {
+    "cx": 580,
+    "rz": 350,
+    "rx": 60,
+    "h": 30
+   },
+   "total": 1020,
+   "two_q": 580,
+   "depth": 107,
+   "two_q_depth": 68,
+   "params": 4
+  },
+  "spiq": {
+   "ops": {
+    "cx": 580,
+    "rz": 470,
+    "sx": 150,
+    "s": 120
+   },
+   "total": 1320,
+   "two_q": 580,
+   "depth": 117,
+   "two_q_depth": 68,
+   "params": 410
+  },
+  "hardware": {
+   "ops": {
+    "cx": 1435,
+    "rz": 1054,
+    "sx": 490,
+    "x": 30,
+    "measure": 30
+   },
+   "total": 3009,
+   "two_q": 1435,
+   "depth": 635,
+   "two_q_depth": 385,
+   "params": 410,
+   "swaps": 285.0,
+   "esp": 1.1626424284481312e-10
+  }
+ },
+ {
+  "problem": "P4",
+  "f": "q2o",
+  "R": 5,
+  "P": 5,
+  "n": 30,
+  "z": 30,
+  "zz": 145,
+  "reps": 3,
+  "plain": {
+   "ops": {
+    "cx": 870,
+    "rz": 525,
+    "rx": 90,
+    "h": 30
+   },
+   "total": 1515,
+   "two_q": 870,
+   "depth": 151,
+   "two_q_depth": 96,
+   "params": 6
+  },
+  "spiq": {
+   "ops": {
+    "cx": 870,
+    "rz": 705,
+    "sx": 210,
+    "s": 150
+   },
+   "total": 1935,
+   "two_q": 870,
+   "depth": 165,
+   "two_q_depth": 96,
+   "params": 615
+  }
+ },
+ {
+  "problem": "P5",
+  "f": "qaoa",
+  "R": 6,
+  "P": 7,
+  "n": 24,
+  "z": 24,
+  "zz": 78,
+  "reps": 1,
+  "plain": {
+   "ops": {
+    "cx": 156,
+    "rz": 102,
+    "h": 24,
+    "rx": 24
+   },
+   "total": 306,
+   "two_q": 156,
+   "depth": 57,
+   "two_q_depth": 36,
+   "params": 2
+  },
+  "spiq": {
+   "ops": {
+    "cx": 156,
+    "rz": 150,
+    "s": 72,
+    "sx": 72
+   },
+   "total": 450,
+   "two_q": 156,
+   "depth": 63,
+   "two_q_depth": 36,
+   "params": 126
+  }
+ },
+ {
+  "problem": "P5",
+  "f": "qaoa",
+  "R": 6,
+  "P": 7,
+  "n": 24,
+  "z": 24,
+  "zz": 78,
+  "reps": 2,
+  "plain": {
+   "ops": {
+    "cx": 312,
+    "rz": 204,
+    "rx": 48,
+    "h": 24
+   },
+   "total": 588,
+   "two_q": 312,
+   "depth": 80,
+   "two_q_depth": 50,
+   "params": 4
+  },
+  "spiq": {
+   "ops": {
+    "cx": 312,
+    "rz": 300,
+    "sx": 120,
+    "s": 96
+   },
+   "total": 828,
+   "two_q": 312,
+   "depth": 90,
+   "two_q_depth": 50,
+   "params": 252
+  },
+  "hardware": {
+   "ops": {
+    "cx": 871,
+    "rz": 613,
+    "sx": 275,
+    "measure": 24,
+    "x": 14
+   },
+   "total": 1773,
+   "two_q": 871,
+   "depth": 340,
+   "two_q_depth": 218,
+   "params": 252,
+   "swaps": 186.33333333333334,
+   "esp": 4.4412993553824166e-07
+  }
+ },
+ {
+  "problem": "P5",
+  "f": "qaoa",
+  "R": 6,
+  "P": 7,
+  "n": 24,
+  "z": 24,
+  "zz": 78,
+  "reps": 3,
+  "plain": {
+   "ops": {
+    "cx": 468,
+    "rz": 306,
+    "rx": 72,
+    "h": 24
+   },
+   "total": 870,
+   "two_q": 468,
+   "depth": 115,
+   "two_q_depth": 72,
+   "params": 6
+  },
+  "spiq": {
+   "ops": {
+    "cx": 468,
+    "rz": 450,
+    "sx": 168,
+    "s": 120
+   },
+   "total": 1206,
+   "two_q": 468,
+   "depth": 129,
+   "two_q_depth": 72,
+   "params": 378
+  }
+ },
+ {
+  "problem": "P5",
+  "f": "q2o",
+  "R": 6,
+  "P": 7,
+  "n": 52,
+  "z": 52,
+  "zz": 330,
+  "reps": 1,
+  "plain": {
+   "ops": {
+    "cx": 660,
+    "rz": 382,
+    "h": 52,
+    "rx": 52
+   },
+   "total": 1146,
+   "two_q": 660,
+   "depth": 96,
+   "two_q_depth": 62,
+   "params": 2
+  },
+  "spiq": {
+   "ops": {
+    "cx": 660,
+    "rz": 486,
+    "s": 156,
+    "sx": 156
+   },
+   "total": 1458,
+   "two_q": 660,
+   "depth": 102,
+   "two_q_depth": 62,
+   "params": 434
+  }
+ },
+ {
+  "problem": "P5",
+  "f": "q2o",
+  "R": 6,
+  "P": 7,
+  "n": 52,
+  "z": 52,
+  "zz": 330,
+  "reps": 2,
+  "plain": {
+   "ops": {
+    "cx": 1320,
+    "rz": 764,
+    "rx": 104,
+    "h": 52
+   },
+   "total": 2240,
+   "two_q": 1320,
+   "depth": 140,
+   "two_q_depth": 90,
+   "params": 4
+  },
+  "spiq": {
+   "ops": {
+    "cx": 1320,
+    "rz": 972,
+    "sx": 260,
+    "s": 208
+   },
+   "total": 2760,
+   "two_q": 1320,
+   "depth": 150,
+   "two_q_depth": 90,
+   "params": 868
+  },
+  "hardware": {
+   "ops": {
+    "cx": 3648,
+    "rz": 2426,
+    "sx": 1190,
+    "x": 95,
+    "measure": 52
+   },
+   "total": 7359,
+   "two_q": 3648,
+   "depth": 1015,
+   "two_q_depth": 639,
+   "params": 868,
+   "swaps": 776.0,
+   "esp": 2.6075308393328822e-21
+  }
+ },
+ {
+  "problem": "P5",
+  "f": "q2o",
+  "R": 6,
+  "P": 7,
+  "n": 52,
+  "z": 52,
+  "zz": 330,
+  "reps": 3,
+  "plain": {
+   "ops": {
+    "cx": 1980,
+    "rz": 1146,
+    "rx": 156,
+    "h": 52
+   },
+   "total": 3334,
+   "two_q": 1980,
+   "depth": 196,
+   "two_q_depth": 126,
+   "params": 6
+  },
+  "spiq": {
+   "ops": {
+    "cx": 1980,
+    "rz": 1458,
+    "sx": 364,
+    "s": 260
+   },
+   "total": 4062,
+   "two_q": 1980,
+   "depth": 210,
+   "two_q_depth": 126,
+   "params": 1302
+  }
+ }
+]

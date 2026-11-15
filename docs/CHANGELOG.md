@@ -5,6 +5,40 @@ See `RESULTS_INDEX.md` for which week folder holds which run.
 
 ---
 
+## 2026-11-12: Gate inventory of the QAOA circuits, and hardware compile
+
+**Files:** `base/circuit_gate_report.py` (new), `docs/hamiltonians/circuit_gates.json` (new), `docs/circuitanalysis.md` (new).
+
+**What changed**
+- `circuit_gate_report.py`: for P1–P5, both formulations and 1–3 layers, counts every gate type in three versions of the circuit:
+  - the plain QAOA circuit;
+  - the SPIQ circuit that the runs execute;
+  - at 2 layers, the circuit compiled for FakeBrooklyn (65-qubit heavy-hex), with SWAP overhead and estimated success probability.
+  It doesn't simulate anything.
+- `circuitanalysis.md`: the gate tables, the exact counting rules, the pattern by workload, the hardware results, and suggestions for what to analyze next.
+
+**Why:** the user asked which gates the circuits contain, how many of each per workload and formulation, what pattern they follow, and whether the new circuit is better.
+
+**Checks:**
+- The rebuilt SPIQ circuits have the same gate counts as the saved `spiq_pcirc_*.qpy` from Weeks 105–111.
+- All 12 counting rules in §3 hold for all 30 rows.
+
+---
+
+## 2026-11-11: Circuit depth and Pauli-term structure, old vs new
+
+**Files:** `base/circuit_depth_report.py` (new), `docs/hamiltonians/circuit_depth.json` (new), `docs/problem-formulation.md`.
+
+**What changed**
+- `circuit_depth_report.py` (new): builds the QAOA circuit for P1–P5 and both formulations at 1–3 layers, decomposed into CNOT, RZ, RX and H, and records the depth, the CNOT count, the CNOT depth and the most couplings on a single qubit. It doesn't simulate anything.
+- `problem-formulation.md` §9.6 (new): depth per workload, how depth relates to the Pauli terms, how the terms are spread, the rule ZZ ≈ n²/(2J), and how the term count scales.
+
+**Why:** the user asked how circuit depth and the number and spread of Pauli terms differ between the formulations, and how they scale.
+
+**Checks:** CNOTs = 2 × ZZ terms × layers holds for all 30 circuits, and the ZZ-count rule reproduces all 10 Hamiltonians.
+
+---
+
 ## 2026-10-28: General form of both Hamiltonians, and the experiment log moved to the results index
 
 **Files:** `base/test_hamiltonian_form.py` (new), `docs/problem-formulation.md`, `docs/RESULTS_INDEX.md`.

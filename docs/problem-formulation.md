@@ -154,6 +154,56 @@ Compared with §3:
 
 Its Pauli (Z/ZZ) form and every coefficient are in §9.0.
 
+### Term by term: what each piece means, and how old and new differ
+
+Both Hamiltonians have the same shape: **λ × (rule-breaking fines) + (plan cost)**. A real join order pays no fines, so its energy is just its cost. Below, each piece is shown with what it measures, why it has that form, and what it becomes on the qubits. To get qubit terms, substitute x = (1 − Z)/2. A product of two bits then becomes a ZZ coupling between their qubits, and a single bit becomes a Z field.
+
+**The bits.**
+- **Both:** v_{t,j} = 1 means "table t is in the intermediate result after join step j". There are J = R − 2 steps: the last join always holds every table, so it needs no bits.
+- **Old only:** w_{p,j} = 1 means "join condition p is applied at step j". It is a separate yes/no choice that the optimizer can set either way.
+- **New:** there is no w. "Condition p applies at step j" is computed as v_{a_p,j} · v_{b_p,j}, which is 1 exactly when both of its tables are in. A planner works the same way: a predicate applies once both its relations have been joined.
+
+**Penalty A, the right number of tables at each step: (j + 2 − Σ_t v_{t,j})².** *Identical in old and new.*
+- *Meaning:* after the first join the result holds 2 tables, after the second 3, and so on. The bracket counts how far the bitstring is from that number. It is 0 when the count is right, and 1, 4, 9, … when it is 1, 2, 3 off.
+- *Why squared:* it has to be zero only at the right count and positive on both sides. Too many tables and too few must both be fined.
+- *On the qubits:* expanding the square couples **every pair of tables at the same step**, with ZZ coefficient 2λ/4. It also gives each table a field that depends on the step. This is the densest part of the new Hamiltonian, with J·R(R−1)/2 couplings.
+
+**Penalty B, once in, always in: v_{t,j−1} − v_{t,j−1}·v_{t,j} = v_{t,j−1}(1 − v_{t,j}).** *Identical in old and new.*
+- *Meaning:* it is 1 only if table t is in the result at step j−1 and gone at step j. A left-deep plan only ever adds tables, so a table can't leave the result.
+- *On the qubits:* each table is coupled to itself at the next step (ZZ −λ/4), a chain through the steps, R(J−1) couplings in total. This is what makes the steps describe one join order, not unrelated sets.
+
+**Penalty C, a condition may be on only if both its tables are in: w_{p,j}(2 − v_{a_p,j} − v_{b_p,j}).** *Old only.*
+- *Meaning:* it is 0 if the condition is off. If the condition is on, the fine is 0, 1 or 2 when 0, 1 or 2 of its tables are missing.
+- *The gap:* nothing fines a condition that is *off* while both its tables are in. Since a condition's selectivity lowers the cost, leaving it off never pays, but switching it on illegally can. C has to catch that, with only λ = J behind it. This is how the old ground state on P1 and P2 came to be a fake plan (§4).
+- *On the qubits:* each condition bit is coupled to its two tables (ZZ −λ/4) and has its own field, which adds P·J qubits.
+- *New:* no w bits, so C is not needed. A condition can't be on wrongly or off wrongly, because it is computed from the table bits.
+
+**The cost: the size of each intermediate result, in logs.**
+- *What it measures:* the estimated size of step j's result is (product of its tables' row counts) × (product of the selectivities of the conditions that apply). In logs that becomes a sum: log size_j = Σ_t c_t v_{t,j} + Σ (s_p over applied conditions). Each table adds its log row count. Each applied condition adds its log selectivity, which is negative, so it lowers the size.
+- *Old:* Σ_j (Σ_t c_t v_{t,j} + Σ_p s_p w_{p,j})², the **square** of each step's log size, with conditions counted through the free w bits.
+- *New:* Σ_j (Σ_t c_t v_{t,j} + Σ_p s_p v_{a_p,j} v_{b_p,j}), the log size itself, with conditions counted through the table bits.
+- *Why the old one squared:* the real cost is the **sum** of the sizes, which the biggest result dominates. Squaring the log makes big results count more, which is closer to that.
+- *What the square does on the qubits:* (a + b + …)² produces a cross term for **every pair** of bits in the step. That couples each table with each other table (c_t c_u / 2), each table with each condition (c_t s_p / 2, even one that shares no table with it), and each condition with each other condition (s_p s_q / 2). That is why the old Hamiltonian has 2–6× more ZZ terms (3 vs 10 up to 78 vs 330), and why the old fields all depend on the size of the *whole* join (§9.0).
+- *What the square does to the ranking:* it rewards pulling a step's log size toward 0, from either side. "Forget a table" and "switch on a condition that doesn't apply" both shrink it, so both are rewarded (§4, Problem 2).
+- *What the linear cost does on the qubits:* each table gets a field equal to its own log size. Each condition adds s_p/4 to the coupling of **its own two tables only**, a coupling that Penalty A already creates. So conditions add no new qubits and no new couplings, only weight.
+- *The trade-off:* the linear cost ranks plans by the **sum of the logs** of the sizes, which is the log of their **product**, not by the sum of the sizes. The best plan is still ranked first on P1–P5. A few mediocre plans swap places (§9.4).
+
+**The penalty weight λ: how big the fines are compared with the cost.**
+- *Old:* λ = J, the number of steps (1, 2, 2, 3, 4 for P1–P5), whatever the table sizes are. Nothing ties it to how much a cheat can save, and on P1 and P2 it was too small (§4).
+- *New:* λ = 1.1 × the largest c_t. With a linear cost, leaving a table out lowers the cost by at most that table's c_t (by less when it also drops a condition, since that removes a negative s_p). So a fine slightly above the largest c_t makes that cheat a loss. It also stays small, which keeps the gaps between real plans a visible fraction of the energy range (§9.4).
+
+**The constant (offset).** In both, λ Σ_j (j+2)², plus whatever the conversion to Z adds. It shifts every energy by the same amount, so it changes nothing about which bitstring wins. It's only kept so that QUBO and Hamiltonian energies can be compared directly.
+
+**How each one is built in the code (`base/Scripts/QUBOGenerator.py`).** Both write the formula with docplex, convert it with `from_docplex_mp` to a qiskit `QuadraticProgram` (the QUBO), and QAOA turns that into the Hamiltonian with `qubo.to_ising()`. Both take log10 of the sizes and selectivities, without rounding. `qubo-formulation` in `base/config.py` (or the environment variable `QUBO_FORMULATION`) picks the formulation.
+
+| Step | Old: `generate_IBMQ_QUBO_for_left_deep_trees_v2` | New: `generate_qaoa_qubo_left_deep` |
+|---|---|---|
+| Variables | `v` (tables × steps) **and** `pred_vars` (conditions × steps) | `v` only |
+| Penalties | `H_A + H_B + H_pred` (C = `H_pred_a + H_pred_b`, one per table of the condition) | `H_A + H_B`, written the same way |
+| Cost | a loop over steps that adds `(Σ card·v + Σ sel·pred_vars)**2` | one sum of `card·v + sel·v[a]·v[b]` over steps, not squared |
+| λ | a counter that goes up by 1 in the cost loop, giving J | `1.1 * max(card)`, computed before the model is built |
+| Repeated condition (P3 lists tables 1–2 twice) | two separate w bits | both selectivities land on the same v_1·v_2 coupling (they add up) |
+
 ### How the qubit count grows with problem size
 
 With R tables and P join conditions there are R − 2 join steps that need bits:
@@ -433,3 +483,58 @@ Three measures of how clearly the Hamiltonian separates the best plan from the r
 | **Fits in a 25-qubit simulation** | Up to 6 tables | Up to 4 tables |
 
 **Bottom line:** the new Hamiltonian is smaller, shallower, has better-conditioned coefficients, and its lowest energy is always the best plan. The price is a slightly less faithful ordering of mediocre plans. No measure shows a loss for the best plan.
+
+### 9.6 Circuit depth and how the Pauli terms are spread
+
+`base/circuit_depth_report.py`, run in the container, builds the QAOA circuit for each problem and formulation at 1–3 layers and decomposes it into CNOT, RZ, RX and H gates without reordering them. It only builds the circuits; it doesn't simulate them. The numbers are in `docs/hamiltonians/circuit_depth.json`, and the term counts come from the `P<k>_<f>.txt` files.
+
+**Circuit depth at 2 layers (the setting all our runs use)**
+
+| Problem | Qubits (new / old) | Depth (new / old) | CNOT depth (new / old) | CNOTs (new / old) |
+|---|---|---|---|---|
+| P1 | 3 / 5 | 23 / 41 | 12 / 24 | 12 / 40 |
+| P2 | 8 / 12 | 38 / 53 | 22 / 32 | 64 / 136 |
+| P3 | 8 / 20 | 38 / 89 | 22 / 56 | 64 / 376 |
+| P4 | 15 / 30 | 65 / 107 | 40 / 68 | 160 / 580 |
+| P5 | 24 / 52 | 80 / 140 | 50 / 90 | 312 / 1320 |
+
+- **The depth changes with every workload.** It grows with the number of tables and, in the old formulation, with the number of conditions too. P2 and P3 give identical circuits in the new formulation (depth 38) but very different ones in the old (53 vs 89), because P3 has 6 conditions.
+- **The depth grows linearly with the number of layers.** For example, at 1 → 2 → 3 layers, P5 goes 57 → 80 → 115 (new) and 96 → 140 → 196 (old). The CNOT count is exactly proportional to the layers.
+- **The new formulation is shallower on every workload:** 1.4–2.4× shallower, with 2.1–5.9× fewer CNOTs. In our noiseless simulations this only changes run time. On real hardware every CNOT adds error, and the old formulation's denser connectivity would also need more SWAP gates to route on a chip with limited connectivity. The routing hasn't been measured.
+
+**How depth relates to the number of terms**
+- **The CNOT count is fixed exactly by the ZZ terms:** CNOTs = 2 × (ZZ terms) × (layers). Each ZZ term becomes CNOT, RZ, CNOT, and Z terms need no CNOTs. For example, P5 old: 2 × 330 × 2 = 1320.
+- **The depth depends on the busiest qubit, not on the total.** Gates on different qubits run in parallel. So one layer needs at least 2 × (the most couplings on any single qubit) CNOT steps. That maximum is 2 / 4 / 4 / 6 / 7 for the new formulation and 4 / 6 / 10 / 11 / 14 for the old. That's why the depth gap (1.4–2.4×) is smaller than the CNOT gap (2–6×).
+- Qiskit's default term order comes out at about 1.5–2.5× that lower bound in both formulations, so reordering the terms could shorten both circuits. That hasn't been tried.
+
+**How the Pauli terms are spread**
+
+| Problem | Qubits (new / old) | Z | ZZ | Share of qubit pairs coupled | Most couplings on one qubit | ZZ coefficient size range |
+|---|---|---|---|---|---|---|
+| P1 | 3 / 5 | 3 / 5 | 3 / 10 | 100% / 100% | 2 / 4 | 0.47–0.72 / 0.50–1.27 |
+| P2 | 8 / 12 | 8 / 12 | 16 / 34 | 57% / 52% | 4 / 6 | 0.41–0.81 / 0.50–1.96 |
+| P3 | 8 / 20 | 8 / 20 | 16 / 94 | 57% / 49% | 4 / 10 | 0.41–0.81 / 0.03–1.96 |
+| P4 | 15 / 30 | 15 / 30 | 40 / 145 | 38% / 33% | 6 / 11 | 0.47–0.93 / 0.08–2.76 |
+| P5 | 24 / 52 | 24 / 52 | 78 / 330 | 28% / 25% | 7 / 14 | 0.55–1.10 / 0.06–3.70 |
+
+- **Only Z and ZZ terms.** Both formulations have exactly one Z term per qubit plus the ZZ couplings, and no terms on three or more qubits.
+- **The same shape, at different sizes.** In both, the qubits of one join step are all coupled to each other, and each table is chained to itself across steps. The old formulation has more qubits per step (R + P instead of R), so its blocks are larger.
+- **Coefficient sizes.** The new coefficients stay within about 2× of each other. The old ones span up to 60× (P3): the square adds many small condition–condition and table–condition couplings (as small as 0.03) next to large table–table couplings (up to 3.7). A small coupling costs as many gates as a large one, but changes the energy very little.
+
+**Is the number of terms tied to the number of qubits? Yes, by the same rule in both formulations.** With J join steps and b qubits per step (so n = b·J qubits in total):
+
+ZZ terms = J · b(b − 1)/2 + R(J − 1) ≈ n² / (2J)
+
+Here b = R in the new formulation and R + P in the old. The rule reproduces every count in the table: for P3 old, 2 · 10 · 9/2 + 4 = 94.
+- **For a fixed number of join steps, the ZZ count grows with the square of the qubit count, in both formulations.** The old one has more terms only because it has more qubits per step. The ratio is about ((R + P)/R)², for example (10/4)² ≈ 6 for P3.
+- **The share of qubit pairs that are coupled is about 1/J** in both: 100% at J = 1, about 50% at J = 2, 33–38% at J = 3, and 25–28% at J = 4. Larger queries give sparser coupling graphs relative to their size, though the number of couplings still grows.
+
+**How the term count scales**
+
+| Grows with | New ("qaoa") | Old ("q2o") |
+|---|---|---|
+| Qubits n, for fixed J | ≈ n² / (2J) | ≈ n² / (2J): the same rule, but more qubits |
+| Workload (R tables, P conditions) | ≈ R³/2, **independent of P** | ≈ R(R + P)²/2: grows with the conditions too |
+| Circuit depth (p layers) | The Hamiltonian doesn't change; the circuit applies every term once per layer: CNOTs = 2·ZZ·p, rotations = (Z + ZZ + qubits)·p, SPIQ angles = the same count | same |
+
+For example, the SPIQ circuit for P5 has 126 angles per layer in the new formulation and 434 in the old.
