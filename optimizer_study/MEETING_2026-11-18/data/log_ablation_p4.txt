@@ -1,0 +1,22 @@
+20 runs to do
+P4 spiq_single 1 P 0.250->0.000 E 7.424->5.602 (ground 4.908) picked_spiq False 195s
+P4 spiq_single 3 P 0.250->0.995 E 7.424->4.927 (ground 4.908) picked_spiq False 195s
+P4 spiq_single 2 P 0.250->0.578 E 7.424->5.205 (ground 4.908) picked_spiq False 195s
+P4 spiq_single 4 P 0.250->0.979 E 7.424->4.952 (ground 4.908) picked_spiq False 181s
+P4 spiq_single 5 P 0.250->0.499 E 7.424->5.517 (ground 4.908) picked_spiq False 181s
+P4 spiq_single 6 P 0.250->0.524 E 7.424->5.226 (ground 4.908) picked_spiq False 181s
+P4 spiq_single 7 P 0.250->1.000 E 7.424->4.914 (ground 4.908) picked_spiq False 176s
+P4 spiq_single 8 P 0.250->0.996 E 7.424->4.946 (ground 4.908) picked_spiq False 177s
+P4 spiq_single 9 P 0.250->0.994 E 7.424->4.942 (ground 4.908) picked_spiq False 177s
+P4 spiq_single 11 P 0.250->0.998 E 7.424->4.920 (ground 4.908) picked_spiq False 179s
+P4 spiq_single 10 P 0.250->0.002 E 7.424->5.805 (ground 4.908) picked_spiq False 180s
+P4 spiq_single 12 P 0.250->0.505 E 7.424->5.410 (ground 4.908) picked_spiq False 180s
+P4 spiq_single 13 P 0.250->0.725 E 7.424->5.142 (ground 4.908) picked_spiq False 188s
+P4 spiq_single 14 P 0.250->1.000 E 7.424->4.927 (ground 4.908) picked_spiq False 188s
+P4 spiq_single 15 P 0.250->0.961 E 7.424->4.946 (ground 4.908) picked_spiq False 187s
+P4 spiq_single 16 P 0.250->0.500 E 7.424->5.218 (ground 4.908) picked_spiq False 188s
+P4 spiq_single 18 P 0.250->0.999 E 7.424->4.938 (ground 4.908) picked_spiq False 189s
+P4 spiq_single 17 P 0.250->0.000 E 7.424->5.701 (ground 4.908) picked_spiq False 190s
+P4 spiq_single 19 P 0.250->0.999 E 7.424->4.923 (ground 4.908) picked_spiq False 181s
+P4 spiq_single 20 P 0.250->0.995 E 7.424->4.942 (ground 4.908) picked_spiq False 181s
+ALL DONE

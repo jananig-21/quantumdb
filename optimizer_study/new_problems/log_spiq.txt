@@ -1,0 +1,25 @@
+[1/12] qaoa Gen_CHAIN_4r_s40000: done 8q 64 angles E_spiq=13.765 61s
+[2/12] qaoa Gen_CHAIN_4r_s40001: done 8q 64 angles E_spiq=11.648 58s
+[3/12] qaoa Gen_CHAIN_4r_s40003: done 8q 64 angles E_spiq=16.723 59s
+[4/12] qaoa Gen_STAR_4r_s41000: done 8q 64 angles E_spiq=17.384 55s
+[5/12] qaoa Gen_STAR_4r_s41003: done 8q 64 angles E_spiq=15.740 59s
+[6/12] qaoa Gen_STAR_4r_s41004: done 8q 64 angles E_spiq=13.331 62s
+[7/12] qaoa Gen_CYCLE_4r_s42000: done 8q 64 angles E_spiq=12.412 57s
+[8/12] qaoa Gen_CYCLE_4r_s42001: done 8q 64 angles E_spiq=11.551 60s
+[9/12] qaoa Gen_CYCLE_4r_s42002: done 8q 64 angles E_spiq=15.148 60s
+[10/12] qaoa Gen_CLIQUE_4r_s43000: done 8q 64 angles E_spiq=13.024 59s
+[11/12] qaoa Gen_CLIQUE_4r_s43001: done 8q 64 angles E_spiq=13.783 58s
+[12/12] qaoa Gen_CLIQUE_4r_s43002: done 8q 64 angles E_spiq=10.711 87s
+[1/12] q2o Gen_CHAIN_4r_s40000: reused Study 1 point
+[2/12] q2o Gen_CHAIN_4r_s40001: reused Study 1 point
+[3/12] q2o Gen_CHAIN_4r_s40003: reused Study 1 point
+[4/12] q2o Gen_STAR_4r_s41000: reused Study 1 point
+[5/12] q2o Gen_STAR_4r_s41003: reused Study 1 point
+[6/12] q2o Gen_STAR_4r_s41004: reused Study 1 point
+[7/12] q2o Gen_CYCLE_4r_s42000: reused Study 1 point
+[8/12] q2o Gen_CYCLE_4r_s42001: reused Study 1 point
+[9/12] q2o Gen_CYCLE_4r_s42002: reused Study 1 point
+[10/12] q2o Gen_CLIQUE_4r_s43000: done 20q 268 angles E_spiq=48.639 452s
+[11/12] q2o Gen_CLIQUE_4r_s43001: done 20q 268 angles E_spiq=46.757 494s
+[12/12] q2o Gen_CLIQUE_4r_s43002: done 20q 268 angles E_spiq=39.367 953s
+SPIQ_ALL_DONE

@@ -1,0 +1,17 @@
+4 runs to do
+rep 3 restart 1: E 17.765 fb 0.000 | best E 17.558 fb 0.000 | 3001 evals 30212s
+rep 1 restart 1: E 12.596 fb 0.003 | best E 12.596 fb 0.003 | 3001 evals 30345s
+rep 4 restart 1: E 12.000 fb 0.612 | best E 12.000 fb 0.612 | 3001 evals 30408s
+rep 2 restart 1: E 11.086 fb 0.380 | best E 11.086 fb 0.380 | 3001 evals 30412s
+rep 3 restart 2: E 9.768 fb 0.976 | best E 9.768 fb 0.976 | 6001 evals 51542s
+rep 1 restart 2: E 15.131 fb 0.002 | best E 12.596 fb 0.003 | 6001 evals 51700s
+rep 4 restart 2: E 17.445 fb 0.144 | best E 12.000 fb 0.612 | 6001 evals 51789s
+rep 2 restart 2: E 17.551 fb 0.160 | best E 11.086 fb 0.380 | 6001 evals 51792s
+rep 3 restart 3: E 15.831 fb 0.024 | best E 9.768 fb 0.976 | 9001 evals 71631s
+rep 1 restart 3: E 14.536 fb 0.021 | best E 12.596 fb 0.003 | 9001 evals 71833s
+rep 4 restart 3: E 12.683 fb 0.415 | best E 12.000 fb 0.612 | 9001 evals 71874s
+rep 2 restart 3: E 17.597 fb 0.120 | best E 11.086 fb 0.380 | 9001 evals 71948s
+rep 3 restart 4: E 13.167 fb 0.293 | best E 9.768 fb 0.976 | 12001 evals 86094s
+rep 1 restart 4: E 14.426 fb 0.000 | best E 12.596 fb 0.003 | 12001 evals 86348s
+rep 4 restart 4: E 12.477 fb 0.057 | best E 12.000 fb 0.612 | 12001 evals 86406s
+rep 2 restart 4: E 10.316 fb 0.039 | best E 10.316 fb 0.039 | 12001 evals 86498s
